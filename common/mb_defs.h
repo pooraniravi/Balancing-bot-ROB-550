@@ -12,6 +12,7 @@
 #define DEFAULT_PWM_FREQ        25000 // period of motor drive pwm
 #define LEFT_MOTOR              2     // id of left motor
 #define RIGHT_MOTOR             1     // id of right motor
+#define CHANNELS                2     // id of 0 indicates all motors
 #define MDIR1_CHIP              1
 #define MDIR1_PIN               28  //gpio1.28  P9.12
 #define MDIR2_CHIP              1
