@@ -14,6 +14,7 @@
 #define MOT1_CS_PIN        0    // analog in of motor 1 current sense
 #define MOT2_CS_PIN        1    // analog in of motor 2 current sense
 #define MB_MOTOR_DEFAULT_PWM_FREQ 25000
+#define MOTOR_PWM_SUBSYSTEM 1
 
 //fuctions
 int mb_motor_init();

@@ -20,7 +20,6 @@
 static int init_flag = 0;
 static int chip[CHANNELS];
 static int dir_pin[CHANNELS];
-static int pwmss[CHANNELS];
 static int pwmch[CHANNELS];
 static int brake_mode = 1;
 static int polarity[CHANNELS];
@@ -48,19 +47,17 @@ int mb_motor_init_freq(int pwm_freq_hz) {
     // right motor is subsystem 1A
     chip[RIGHT_MOTOR - 1] = MDIR1_CHIP;
     dir_pin[RIGHT_MOTOR - 1] = MDIR1_PIN;
-    pwmss[RIGHT_MOTOR - 1] = 1;
     pwmch[RIGHT_MOTOR - 1] = 'A';
     polarity[RIGHT_MOTOR - 1] = MOT_1_POL;
 
     // left motor is subsystem 1B
     chip[LEFT_MOTOR - 1] = MDIR2_CHIP;
     dir_pin[LEFT_MOTOR - 1] = MDIR2_PIN;
-    pwmss[LEFT_MOTOR - 1] = 1;
     pwmch[LEFT_MOTOR - 1] = 'B';
     polarity[LEFT_MOTOR - 1] = MOT_2_POL;
 
     // set up PWM
-    if (unlikely(rc_pwm_init(1, pwm_freq_hz)) {
+    if (unlikely(rc_pwm_init(MOTOR_PWM_SUBSYSTEM, pwm_freq_hz)) {
         fprintf(stderr, "ERROR: failed to initialize pwm subsystem 1 in motor init\n");
         return -1;
     }
@@ -92,7 +89,11 @@ int mb_motor_cleanup() {
         return -1;
     }
 
-    rc_pwm_cleanup(1);
+    if (rc_pwm_cleanup(MOTOR_PWM_SUBSYSTEM)) {
+        fprintf(stderr, "ERROR: rc_pwm_cleanup in motor_cleanup\n");
+        return -1;
+    }
+
     for (int c = 0; c < CHANNELS; ++c) {
         rc_gpio_cleanup(chip[c], dir_pin[c]);
     }
@@ -134,6 +135,12 @@ int mb_motor_disable() {
 
     if (unlikely(!init_flag)) {
         fprintf(stderr, "ERROR: trying to disable motors before motors have been initialized\n");
+        return -1;
+    }
+
+    // TODO not sure if need to set PWM to 0 before disabling
+    if (rc_pwm_cleanup(MOTOR_PWM_SUBSYSTEM)) {
+        fprintf(stderr, "ERROR: rc_pwm_cleanup in motor_disable\n");
         return -1;
     }
 
@@ -182,7 +189,7 @@ int mb_motor_set(int motor, double duty) {
         printf("ERROR: in motor_set, failed to write to gpio pin %d,%d\n", chip[m], dir_pin[m]);
         return -1;
     }
-    if (unlikely(rc_pwm_set_duty(pwmss[m], pwmch[m], duty))) {
+    if (unlikely(rc_pwm_set_duty(MOTOR_PWM_SUBSYSTEM, pwmch[m], duty))) {
         printf("ERROR: in motor_set, failed to write to pwm %d%c\n", pwmss[m], pwmch[m]);
         return -1;
     }
