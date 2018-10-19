@@ -70,9 +70,13 @@ int mb_motor_init_freq(int pwm_freq_hz) {
     }
 
     // by default motor break is pulled high which is the behaviour we want
-    // TODO set gpio and pwm values to something predictable
-
     init_flag = 1;
+    // set gpio and pwm values to something predictable
+    if (unlikely(mb_motor_set_all(0)) {
+        fprintf(stderr, "ERROR: failed to initialize PWM and gpio to default values\n");
+        return -1;
+    }
+
     return 0;
 }
 
