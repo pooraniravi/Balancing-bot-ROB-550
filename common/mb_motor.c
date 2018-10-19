@@ -39,10 +39,6 @@ int mb_motor_init() {
 * set up pwm channels, gpio assignments and make sure motors are left off.
 *******************************************************************************/
 int mb_motor_init_freq(int pwm_freq_hz) {
-    if (rc_motor_init_freq(pwm_freq_hz)) {
-        return -1;
-    }
-
     // right motor is subsystem 1A
     chip[RIGHT_MOTOR - 1] = MDIR1_CHIP;
     dir_pin[RIGHT_MOTOR - 1] = MDIR1_PIN;
