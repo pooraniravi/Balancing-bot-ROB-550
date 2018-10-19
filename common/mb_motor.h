@@ -10,7 +10,7 @@
 #define MDIR1_PIN         28  //gpio1.28  P9.12
 #define MDIR2_CHIP         1
 #define MDIR2_PIN         16  //gpio1.16  P9.15
-#define MOT_BRAKE_EN_PIN   0,20    // gpio0.20  P9.41
+#define MOT_BRAKE_EN_PIN   20    // gpio0.20  P9.41
 #define MOT1_CS_PIN        0    // analog in of motor 1 current sense
 #define MOT2_CS_PIN        1    // analog in of motor 2 current sense
 #define MB_MOTOR_DEFAULT_PWM_FREQ 25000
