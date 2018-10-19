@@ -21,7 +21,6 @@ static int init_flag = 0;
 static int chip[CHANNELS];
 static int dir_pin[CHANNELS];
 static int pwmch[CHANNELS];
-static int brake_mode = 1;
 static int polarity[CHANNELS];
 
 /*******************************************************************************
@@ -71,7 +70,6 @@ int mb_motor_init_freq(int pwm_freq_hz) {
     }
 
     // by default motor break is pulled high which is the behaviour we want
-    brake_mode = 1;
     // TODO set gpio and pwm values to something predictable
 
     init_flag = 1;
@@ -120,8 +118,6 @@ int mb_motor_brake(int brake_en) {
         return -1;
     }
 
-    // just to keep track; not sure if necessary?
-    brake_mode = brake_en;
     return 0;
 }
 
