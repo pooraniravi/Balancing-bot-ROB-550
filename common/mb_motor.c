@@ -22,6 +22,7 @@ static int chip[CHANNELS];
 static int dir_pin[CHANNELS];
 static int pwmch[CHANNELS];
 static int polarity[CHANNELS];
+static int adc_pin[CHANNELS];
 
 /*******************************************************************************
 * int mb_motor_init()
@@ -39,17 +40,25 @@ int mb_motor_init() {
 * set up pwm channels, gpio assignments and make sure motors are left off.
 *******************************************************************************/
 int mb_motor_init_freq(int pwm_freq_hz) {
+    // need ADC for reading motor current
+    if(rc_adc_init()){
+        fprintf(stderr,"ERROR: failed to run rc_init_adc()\n");
+        return -1;
+    }
+
     // right motor is subsystem 1A
     chip[RIGHT_MOTOR - 1] = MDIR1_CHIP;
     dir_pin[RIGHT_MOTOR - 1] = MDIR1_PIN;
     pwmch[RIGHT_MOTOR - 1] = 'A';
     polarity[RIGHT_MOTOR - 1] = MOT_1_POL;
+    adc_pin[RIGHT_MOTOR - 1] = MOT_1_CS;
 
     // left motor is subsystem 1B
     chip[LEFT_MOTOR - 1] = MDIR2_CHIP;
     dir_pin[LEFT_MOTOR - 1] = MDIR2_PIN;
     pwmch[LEFT_MOTOR - 1] = 'B';
     polarity[LEFT_MOTOR - 1] = MOT_2_POL;
+    adc_pin[LEFT_MOTOR - 1] = MOT_2_CS;
 
     // set up PWM
     if (unlikely(rc_pwm_init(MOTOR_PWM_SUBSYSTEM, pwm_freq_hz)) {
@@ -84,6 +93,11 @@ int mb_motor_cleanup() {
 
     if (unlikely(!init_flag)) {
         fprintf(stderr, "ERROR: trying cleanup before motors have been initialized\n");
+        return -1;
+    }
+
+    if(rc_adc_cleanup()){
+        fprintf(stderr,"ERROR: failed to run rc_adc_cleanup()\n");
         return -1;
     }
 
@@ -221,6 +235,21 @@ int mb_motor_set_all(double duty) {
 * returns the measured current in A
 *******************************************************************************/
 double mb_motor_read_current(int motor) {
+    if (unlikely(motor < 0 || motor > CHANNELS)) {
+        fprintf(stderr, "ERROR in motor_read_current, motor argument must be between 0 & %d\n", CHANNELS);
+        return -1;
+    }
+    if (unlikely(!init_flag)) {
+        fprintf(stderr, "ERROR: trying to motor_read_current before they have been initialized\n");
+        return -1;
+    }
+
+    const double v = rc_adc_read_volt(adc_pin[motor-1]);
+    if (unlikely(v < 0)) {
+        printf("ERROR: in motor_read_current rc_adc_read_volt failed and retrieved %f\n", v);
+        return -1;
+    }
+
     //DRV8801 driver board CS pin puts out 500mV/A
-    return 0.0;
+    return v * 0.500;
 }
