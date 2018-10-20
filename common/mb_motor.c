@@ -61,7 +61,7 @@ int mb_motor_init_freq(int pwm_freq_hz) {
     adc_pin[LEFT_MOTOR - 1] = MOT_2_CS;
 
     // set up PWM
-    if (unlikely(rc_pwm_init(MOTOR_PWM_SUBSYSTEM, pwm_freq_hz)) {
+    if (unlikely(rc_pwm_init(MOTOR_PWM_SUBSYSTEM, pwm_freq_hz))) {
         fprintf(stderr, "ERROR: failed to initialize pwm subsystem 1 in motor init\n");
         return -1;
     }
@@ -73,15 +73,21 @@ int mb_motor_init_freq(int pwm_freq_hz) {
             return -1;
         }
     }
+    // all have the same chip
+    if (unlikely(rc_gpio_init(chip[0], MOT_BRAKE_EN, GPIOHANDLE_REQUEST_OUTPUT))) {
+        fprintf(stderr, "ERROR: failed to set up gpio %d,%d in motor init\n", chip[0], MOT_BRAKE_EN);
+        return -1;
+    }
 
     // by default motor break is pulled high which is the behaviour we want
     init_flag = 1;
     // set gpio and pwm values to something predictable
-    if (unlikely(mb_motor_set_all(0)) {
+    if (unlikely(mb_motor_set_all(0))) {
         fprintf(stderr, "ERROR: failed to initialize PWM and gpio to default values\n");
         return -1;
     }
 
+    fprintf(stdout, "Motor init\n");
     return 0;
 }
 
@@ -110,6 +116,7 @@ int mb_motor_cleanup() {
         rc_gpio_cleanup(chip[c], dir_pin[c]);
     }
 
+    fprintf(stdout, "Motor cleanup\n");
     return 0;
 }
 
@@ -148,12 +155,13 @@ int mb_motor_disable() {
         return -1;
     }
 
-    // TODO not sure if need to set PWM to 0 before disabling
-    if (rc_pwm_cleanup(MOTOR_PWM_SUBSYSTEM)) {
-        fprintf(stderr, "ERROR: rc_pwm_cleanup in motor_disable\n");
+    // seems to just be about breaking?
+    if (mb_motor_set_all(0)) {
+        fprintf(stderr, "ERROR: motor_set_all in motor_disable\n");
         return -1;
     }
 
+    fprintf(stdout, "Motor disable\n");
     return 0;
 }
 
@@ -200,7 +208,7 @@ int mb_motor_set(int motor, double duty) {
         return -1;
     }
     if (unlikely(rc_pwm_set_duty(MOTOR_PWM_SUBSYSTEM, pwmch[m], duty))) {
-        printf("ERROR: in motor_set, failed to write to pwm %d%c\n", pwmss[m], pwmch[m]);
+        printf("ERROR: in motor_set, failed to write to pwm %d%c\n", MOTOR_PWM_SUBSYSTEM, pwmch[m]);
         return -1;
     }
     return 0;
