@@ -17,9 +17,54 @@
 #include <rc/encoder_eqep.h>
 #include <rc/adc.h>
 #include <rc/time.h>
+#include <sys/time.h>
 #include "../common/mb_motor.h"
+#include "../common/mb_defs.h"
+#include "../common/mb_odometry.h"
+#define ROUNDS_TO_MEASURE 600
 
 FILE* f1;
+
+int64_t us_now (void){
+    struct timeval tv;
+    gettimeofday (&tv, NULL);
+    return (int64_t) tv.tv_sec * 1000000 + tv.tv_usec;
+}
+
+void measureMotor(int motor) {
+    double times[ROUNDS_TO_MEASURE];
+    int ticks[ROUNDS_TO_MEASURE];
+    double currents[ROUNDS_TO_MEASURE];
+
+    int seconds = 2;
+    // let motor run at no load
+    mb_motor_set(motor, 1.0);
+    // wait for it to enter steady state
+    rc_nanosleep(seconds * 1e9);
+
+    printf("Assuming in steady state now\n");
+    resetEncoders();
+
+    int64_t startTime = us_now();
+
+    int64_t now = startTime;
+    int i = 0;
+    while (now - startTime < seconds * 1e6) {
+        now = us_now();
+        times[i] = now - startTime;
+        ticks[i] = rc_encoder_eqep_read(motor);
+        currents[i] = mb_motor_read_current(motor);
+
+        ++i;
+        rc_nanosleep(seconds * 1e7);
+    }
+
+    for (int j = 0; j < i; ++j) {
+        printf("%f, %d, %f\n", times[j], ticks[j], currents[j]);
+    }
+    mb_motor_set(motor, 0);
+    printf("Out of loop\n");
+}
 
 /*******************************************************************************
 * int main() 
@@ -57,6 +102,11 @@ int main(){
         return -1;
     }
 
+    if (mb_motor_init() < 0) {
+        fprintf(stderr, "ERROR: failed to initialze mb_motors\n");
+        return -1;
+    }
+
     // make PID file to indicate your project is running
 	// due to the check made on the call to rc_kill_existing_process() above
 	// we can be fairly confident there is no PID file already and we can
@@ -65,14 +115,8 @@ int main(){
 
 
     rc_set_state(RUNNING);
-    while(rc_get_state()!=EXITING){
-        printf("\r");
-        for(int i=1;i<=3;i++){
-            printf("%10d |", rc_encoder_eqep_read(i));
-        }
-        fflush(stdout);
-    	rc_nanosleep(1E9);
-    }
+
+    measureMotor(LEFT_MOTOR);
 
 	// exit cleanly
 	rc_encoder_eqep_cleanup();
