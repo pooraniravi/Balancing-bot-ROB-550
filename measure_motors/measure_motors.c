@@ -66,6 +66,11 @@ int main(){
 
     rc_set_state(RUNNING);
     while(rc_get_state()!=EXITING){
+        printf("\r");
+        for(int i=1;i<=3;i++){
+            printf("%10d |", rc_encoder_eqep_read(i));
+        }
+        fflush(stdout);
     	rc_nanosleep(1E9);
     }
 
