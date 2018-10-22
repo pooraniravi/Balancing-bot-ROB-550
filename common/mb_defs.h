@@ -26,6 +26,7 @@
 #define MOT_2_CS                4    // analog in of motor 2 current sense
 #define GEAR_RATIO              20.4  // gear ratio of motor
 #define ENCODER_RES             48.0  // encoder counts per motor shaft revolution
+#define ENCODER_TICKS_TO_ROT    1/(GEAR_RATIO * ENCODER_RES)
 #define WHEEL_DIAMETER          0.08 // diameter of wheel in meters
 #define WHEEL_BASE              0.15  // wheel separation distance in meters
 #define FWD_VEL_SENSITIVITY     0.1   // sensitivity of RC control for moving
