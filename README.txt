@@ -12,6 +12,11 @@ common/mb_defs.h             : Define hardware config
 common/mb_motors.c/.h        : Motor functions to be used by balancebot
 common/mb_odometry.c/.h	     : Odometry functions
 
+## Sections to split up
+- balance controller (section 2) - Phoneix
+- odometry and motion control (section 3) - Johnson (will provide limited help for other sections)
+- path planning and following (section 4) -
+
 ## How to automatically sync code from computer to Beaglebone:
 1. (on computer) ssh-keygen to default `id_rsa` and `id_rsa.pub`
 2. (on bbg) copy content of computer's `id_rsa.pub` to bbg's `~/.ssh/authorized_keys` (create file/directory if necessary)
