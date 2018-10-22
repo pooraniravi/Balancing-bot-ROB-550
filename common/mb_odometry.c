@@ -20,3 +20,8 @@ void mb_odometry_update(mb_odometry_t* mb_odometry, mb_state_t* mb_state){
 float mb_clamp_radians(float angle){
     return 0;
 }
+
+void resetEncoders() {
+    rc_encoder_eqep_write(1, 0);
+    rc_encoder_eqep_write(2, 0);
+}
