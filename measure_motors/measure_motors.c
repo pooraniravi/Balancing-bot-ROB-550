@@ -31,14 +31,14 @@ int64_t us_now (void){
     return (int64_t) tv.tv_sec * 1000000 + tv.tv_usec;
 }
 
-void measureMotor(int motor) {
+void measureMotor(int motor, double duty) {
     double times[ROUNDS_TO_MEASURE];
     int ticks[ROUNDS_TO_MEASURE];
     double currents[ROUNDS_TO_MEASURE];
 
     int seconds = 2;
     // let motor run at no load
-    mb_motor_set(motor, 1.0);
+    mb_motor_set(motor, duty);
     // wait for it to enter steady state
     rc_nanosleep(seconds * 1e9);
 
@@ -116,7 +116,8 @@ int main(){
 
     rc_set_state(RUNNING);
 
-    measureMotor(LEFT_MOTOR);
+    // try at 0.5 0.8 1.0
+    measureMotor(LEFT_MOTOR, 0.5);
 
 	// exit cleanly
 	rc_encoder_eqep_cleanup();
