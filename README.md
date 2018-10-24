@@ -1,3 +1,4 @@
+```
 /*******************************************************************************
 *                           Balancebot Template Code
 *                           pgaskell@umich.edu
@@ -11,6 +12,7 @@ common/mb_controller.c/.h    : Contoller for manual and autonomous nav
 common/mb_defs.h             : Define hardware config
 common/mb_motors.c/.h        : Motor functions to be used by balancebot
 common/mb_odometry.c/.h	     : Odometry functions
+```
 
 ## Sections to split up
 - balance controller (section 2) - Phoneix
