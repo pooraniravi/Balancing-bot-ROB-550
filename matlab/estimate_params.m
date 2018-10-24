@@ -422,4 +422,24 @@ sR = sqrt(ER'*ER/(size(ER,1)-1));
 
 fprintf('Left K: %f +/- %f\n', KL, sL);
 fprintf('Right K: %f +/- %f\n', KR, sR);
+
+%% steady state noload
+LNL = WL(1:size(L1,1));
+LNR = WR(1:size(R1,1));
+wNLL = mean(LNL);
+wNLR = mean(LNR);
+fprintf('Left w_NL: %f +/- %f\n', wNLL, std(LNL));
+fprintf('Right w_NL: %f +/- %f\n', wNLR, std(LNR));
+
+%% friction coefficient
+bL = (KL*VL(1)/wNLL - KL^2)/RL;
+bLmin = ((KL+sL)*VL(1)/wNLL - (KL+sL)^2)/RL;
+bLmax = ((KL-sL)*VL(1)/wNLL - (KL-sL)^2)/RL;
+
+bR = (KR*VR(1)/wNLR - KR^2)/RR;
+bRmin = ((KR+sR)*VR(1)/wNLR - (KR+sR)^2)/RR;
+bRmax = ((KR-sR)*VR(1)/wNLR - (KR-sR)^2)/RR;
+fprintf('Left b: %f +/- %f\n', bL, max(bLmax-bL, bL-bLmin));
+fprintf('Right b: %f +/- %f\n', bR, max(bRmax-bR, bR-bRmin));
+
 %% estimate J
