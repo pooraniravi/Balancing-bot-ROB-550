@@ -547,28 +547,28 @@ R3=[4.000000, 3, 0.044615
 1057198.000000, 2786, 0.004835];
 
 %caluclate the instant w and a 
-% WLC=ones(size(L3,1),1);
-% ALC=ones(size(L3,1),1);
-% WRC=ones(size(R3,1),1);
-% ARC=ones(size(R3,1),1);
+ WLC=ones(size(L3,1),1);
+ ALC=ones(size(L3,1),1);
+ WRC=ones(size(R3,1),1);
+ ARC=ones(size(R3,1),1);
 % WLC(1)=L3(1,2)./(L3(1,1)/1e6).* -radPerTick;
 % ALC(1)=WLC(1)./(L3(1,1)/1e6).* -radPerTick;
 % WRC(1)=R3(1,2)./(R3(1,1)/1e6).* radPerTick;
 % ARC(1)=WRC(1)./(R3(1,1)/1e6).* radPerTick;
-% for i=1:size(L3,1)-1
-% WLC(i+1) = (L3(i+1,2)-L3(i,2))/((L3(i+1,1)-L3(i,1))/1e6) * -radPerTick;
-% ALC(i+1) = -(WLC(i+1)-WLC(i))/((L3(i+1,1)-L3(i,1))/1e6);
-% end
-% for i=1:size(R3,1)-1
-% WRC(i+1) = (R3(i+1,2)-R3(i,2))./((R3(i+1,1)-R3(i,1))/1e6) .* radPerTick;
-% ARC(i+1) = -(WRC(i+1)-WRC(i))/((R3(i+1,1)-R3(i,1))/1e6);
-% end
+ for i=1:size(L3,1)-1
+ WLC(i) = (L3(i+1,2)-L3(i,2))/((L3(i+1,1)-L3(i,1))/1e6) * -radPerTick;
+ ALC(i) = -(WLC(i+1)-WLC(i))/((L3(i+1,1)-L3(i,1))/1e6);
+ end
+ for i=1:size(R3,1)-1
+ WRC(i) = (R3(i+1,2)-R3(i,2))./((R3(i+1,1)-R3(i,1))/1e6) .* radPerTick;
+ ARC(i) = -(WRC(i+1)-WRC(i))/((R3(i+1,1)-R3(i,1))/1e6);
+ end
 
 %calculate the average w and a
-WLC = L3(:,2)./(L3(:,1)/1e6).* -radPerTick;
-WRC = R3(:,2)./(R3(:,1)/1e6).* radPerTick;
-ALC = L3(:,2)./(L3(:,1)/1e6)./(L3(:,1)/1e6).* -radPerTick;
-ARC = R3(:,2)./(R3(:,1)/1e6)./(R3(:,1)/1e6).* radPerTick;
+%WLC = L3(:,2)./(L3(:,1)/1e6).* -radPerTick;
+%WRC = R3(:,2)./(R3(:,1)/1e6).* radPerTick;
+%ALC = L3(:,2)./(L3(:,1)/1e6)./(L3(:,1)/1e6).* -radPerTick;
+%ARC = R3(:,2)./(R3(:,1)/1e6)./(R3(:,1)/1e6).* radPerTick;
 
 IL=bL*WLC./ALC;
 IR=bR*WRC./ARC;
