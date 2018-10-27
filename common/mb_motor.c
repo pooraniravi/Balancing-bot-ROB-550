@@ -87,7 +87,7 @@ int mb_motor_init_freq(int pwm_freq_hz) {
         return -1;
     }
 
-    fprintf(stdout, "Motor init\n");
+//    fprintf(stdout, "Motor init\n");
     return 0;
 }
 

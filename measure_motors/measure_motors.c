@@ -22,7 +22,7 @@
 #include "../common/mb_defs.h"
 #include "../common/mb_odometry.h"
 
-#define ROUNDS_TO_MEASURE 10000
+#define ROUNDS_TO_MEASURE 1000
 
 FILE *f1;
 
@@ -55,14 +55,14 @@ void measureMotor(int motor, double duty) {
 
     int64_t now = startTime;
     int i = 0;
-    while (now - startTime < 10e6) {
+    while (now - startTime < 5e6) {
         now = us_now();
         times[i] = now - startTime;
         ticks[i] = rc_encoder_eqep_read(motor);
         currents[i] = mb_motor_read_current(motor);
 
         ++i;
-        rc_nanosleep(1e7);
+        rc_nanosleep(5e6);
     }
 
     for (int j = 0; j < i; ++j) {
