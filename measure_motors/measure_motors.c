@@ -22,7 +22,7 @@
 #include "../common/mb_defs.h"
 #include "../common/mb_odometry.h"
 
-#define ROUNDS_TO_MEASURE 600
+#define ROUNDS_TO_MEASURE 10000
 
 FILE *f1;
 
@@ -43,34 +43,32 @@ void measureMotor(int motor, double duty) {
     int ticks[ROUNDS_TO_MEASURE];
     double currents[ROUNDS_TO_MEASURE];
 
-    int seconds = 2;
     // let motor run at no load
     mb_motor_set(motor, duty);
     // wait for it to enter steady state
-    rc_nanosleep(seconds * 1e9);
+    rc_nanosleep(1e9);
 
-    printf("Assuming in steady state now\n");
+//    printf("Assuming in steady state now\n");
     resetEncoders();
 
     int64_t startTime = us_now();
 
     int64_t now = startTime;
     int i = 0;
-    while (now - startTime < seconds * 1e6) {
+    while (now - startTime < 10e6) {
         now = us_now();
         times[i] = now - startTime;
         ticks[i] = rc_encoder_eqep_read(motor);
         currents[i] = mb_motor_read_current(motor);
 
         ++i;
-        rc_nanosleep(seconds * 1e7);
+        rc_nanosleep(1e7);
     }
 
     for (int j = 0; j < i; ++j) {
         printf("%f, %d, %f\n", times[j], ticks[j], currents[j]);
     }
     mb_motor_set(motor, 0);
-    printf("Out of loop\n");
 }
 
 void measureInertia(int motor, double duty) {
@@ -120,7 +118,7 @@ void measureInertia(int motor, double duty) {
 * int main() 
 *
 *******************************************************************************/
-int main() {
+int main(int argc, char** argv) {
 
     // make sure another instance isn't running
     // if return value is -3 then a background process is running with
@@ -166,9 +164,28 @@ int main() {
 
     rc_set_state(RUNNING);
 
-    // try at 0.5 0.8 1.0
-    //    measureMotor(LEFT_MOTOR, 0.5);
-    measureInertia(RIGHT_MOTOR, 1.0);
+    if (argc != 3) {
+        fprintf(stderr, "Specify motor (L,R) and duty (float)\n");
+        return -1;
+    }
+    int motor;
+    switch (argv[1][0]) {
+        case 'r':
+        case 'R':
+            motor = RIGHT_MOTOR;
+            break;
+        case 'l':
+        case 'L':
+            motor = LEFT_MOTOR;
+            break;
+        default:
+            fprintf(stderr, "Specify motor (L,R) and duty (float)\n");
+            return -1;
+    }
+
+    double duty = atof(argv[2]);
+    measureMotor(motor, duty);
+//    measureInertia(RIGHT_MOTOR, 1.0);
 
     // exit cleanly
     rc_encoder_eqep_cleanup();
