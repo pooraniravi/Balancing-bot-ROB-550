@@ -40,10 +40,44 @@ common/mb_odometry.c/.h	     : Odometry functions
 - steady state no load speed ω_NL = KV/(K^2 + Rb)
     - estimate b = (KV/(ω_NL) - K^2) / R
     - ignore c for modelling
-- determine stall torque by holding onto wheel to stall it
-    - T_s = KV/R
-    - measure voltage across motors
-- determine inertia J by accelerating wheel with constant current
-    - Ki = Jw_dot + bw
-    - measure w_dot by tracking w over time
-    - can try spin up and then spin down by turning off motor
+- determine friction coefficients b ,c
+    - τ = Ki − bω − c sgn(ω)
+    - ignoring c
+    - set τ=0, then ωNL =KV/(K^2 + Rb)
+    - b = (KV/ωNL - K^2)/R
+- determine the Inertia of the motor armature, shaft and gearbox IM
+    - Inertia = acceleration torque / acceleration
+    - Apply a certain current to the motor
+    - plot speed versus time, to get the acceleration
+    - with an initial velocity, set duty to 0 to get
+        - 0 = Jwdot + bω
+
+Motor coil Resistance R   (5.4  5.6) +/- 0.1 Ohm ,makred on the arcrylic board
+No Load Speed ⍵NL   measure the speed from encoder
+Motor Constant K    V = Ri + Kω
+Stall Torque 𝜏S     τ = Ki
+Friction Coefficients (b & c or just b)   ωNL =KV/(K2 + Rb)
+Inertia of the motor armature, shaft and gearbox IM
+
+Reference from manufactuer's specs:
+Gear ratio: 20.4:1
+No-load speed @ 12V:    370 rpm
+No-load current @ 12V:  200 mA
+Stall current @ 12V:    2100 mA
+Stall torque @ 12V: 42 oz·in
+No-load speed @ 6V: 185 rpm1
+Stall current @ 6V: 1050 mA1
+Stall torque @ 6V:  21 oz·in1
+
+## Determined parameters
+Left K: 0.261708 +/- 0.044643
+Right K: 0.282025 +/- 0.068916
+
+Left w_NL: 44.193104 +/- 0.044183
+Right w_NL: 40.627945 +/- 0.046306
+
+Left b: 0.000114 +/- 0.002513
+Right b: 0.000263 +/- 0.004255
+
+Left J: 0.000046 +/- 0.000699
+Right J: 0.000114 +/- 0.002082

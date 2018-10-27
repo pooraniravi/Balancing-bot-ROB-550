@@ -64,28 +64,20 @@ fprintf('Right b: %f +/- %f\n', bR, max(bRmax-bR, bR-bRmin));
 %% estimate J
 leftData = {0, 'data/leftJ.csv'};
 rightData = {0 , 'data/rightJ.csv'};
-[~, ~, RIL, ~, TL, TicksL] = loadMeasurements(leftData, RL, -1, 2);
-[~, ~, RIR, ~, TR, TicksR] = loadMeasurements(rightData, RR, 1, 2);
+[~, ~, RIL, ~, TL, TicksL] = loadMeasurements(leftData, RL, -1, 1);
+[~, ~, RIR, ~, TR, TicksR] = loadMeasurements(rightData, RR, 1, 1);
 
 % instantaneous angular velocity
 WL = diff(TicksL) ./ diff(TL) .* radPerTick;
 WdotL = diff(WL) ./ diff(TL(1:end-1));
 
-YL = -WL(1:end-1).*bL;
-JL = WdotL \ YL;
-YhatL = WdotL .* JL;
+JL = WdotL \ (-WL(1:end-1).*bL);
+YhatL = W .* JL;
 EL = YL - YhatL;
 % standard error of regression
 sL = sqrt(EL'*EL/(size(EL,1)-1));
 
 WR = diff(TicksR) ./ diff(TR) .* radPerTick;
 WdotR = diff(WR) ./ diff(TR(1:end-1));
-YR = -WR(1:end-1).*bR;
 
-JR = WdotR \ YR;
-YhatR = WdotR .* JR;
-ER = YR - YhatR;
-% standard error of regression
-sR = sqrt(ER'*ER/(size(ER,1)-1));
-fprintf('Left J: %f +/- %f\n', JL, sL);
-fprintf('Right J: %f +/- %f\n', JR, sR);
+JR = WdotR \ (-WR(1:end-1).*bR);
