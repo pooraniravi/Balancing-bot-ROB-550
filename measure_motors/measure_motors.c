@@ -76,18 +76,17 @@ void measureInertia(int motor, double duty) {
     int ticks[ROUNDS_TO_MEASURE];
     double currents[ROUNDS_TO_MEASURE];
 
-    int seconds = 2;
     // let motor run at no load
     mb_motor_set(motor, duty);
     // wait for it to enter steady state
-    rc_nanosleep(seconds * 1e9);
+    rc_nanosleep(1e9);
 
-    printf("Turning off motor\n");
+//    printf("Turning off motor\n");
     resetEncoders();
 
     // TODO should we break or not? take a look at current and then decide
-    if (mb_motor_brake(1) != 0) {
-        printf("Motor can't modify brake");
+    if (mb_motor_brake(0) != 0) {
+        fprintf(stderr, "Motor can't modify brake");
         return;
     };
     // turn off motor
@@ -104,14 +103,14 @@ void measureInertia(int motor, double duty) {
         currents[i] = mb_motor_read_current(motor);
 
         ++i;
-        rc_nanosleep(seconds * 1e7);
+        rc_nanosleep(1e7);
     }
 
     for (int j = 0; j < i; ++j) {
         printf("%f, %d, %f\n", times[j], ticks[j], currents[j]);
     }
     mb_motor_set(motor, 0);
-    printf("Out of loop\n");
+//    printf("Out of loop\n");
 }
 
 /*******************************************************************************
@@ -184,8 +183,8 @@ int main(int argc, char** argv) {
     }
 
     double duty = atof(argv[2]);
-    measureMotor(motor, duty);
-//    measureInertia(RIGHT_MOTOR, 1.0);
+//    measureMotor(motor, duty);
+    measureInertia(motor, duty);
 
     // exit cleanly
     rc_encoder_eqep_cleanup();
