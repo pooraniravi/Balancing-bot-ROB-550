@@ -74,8 +74,8 @@ int mb_motor_init_freq(int pwm_freq_hz) {
         }
     }
     // all have the same chip
-    if (unlikely(rc_gpio_init(chip[0], MOT_BRAKE_EN, GPIOHANDLE_REQUEST_OUTPUT))) {
-        fprintf(stderr, "ERROR: failed to set up gpio %d,%d in motor init\n", chip[0], MOT_BRAKE_EN);
+    if (unlikely(rc_gpio_init(0, MOT_BRAKE_EN, GPIOHANDLE_REQUEST_OUTPUT))) {
+        fprintf(stderr, "ERROR: failed to set up gpio %d,%d in motor init\n", 0, MOT_BRAKE_EN);
         return -1;
     }
 
@@ -87,7 +87,7 @@ int mb_motor_init_freq(int pwm_freq_hz) {
         return -1;
     }
 
-    fprintf(stdout, "Motor init\n");
+//    fprintf(stdout, "Motor init\n");
     return 0;
 }
 
@@ -134,8 +134,8 @@ int mb_motor_brake(int brake_en) {
     }
 
 
-    if (unlikely(rc_gpio_set_value(chip[0], MOT_BRAKE_EN, brake_en))) {
-        printf("ERROR: in motor_brake, failed to write to gpio pin %d,%d\n", chip[0], MOT_BRAKE_EN);
+    if (unlikely(rc_gpio_set_value(0, MOT_BRAKE_EN, brake_en))) {
+        printf("ERROR: in motor_brake, failed to write to gpio pin %d,%d\n", 0, MOT_BRAKE_EN);
         return -1;
     }
 

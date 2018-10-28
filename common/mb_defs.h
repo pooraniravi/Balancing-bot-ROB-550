@@ -18,14 +18,15 @@
 #define MDIR2_CHIP              1
 #define MDIR2_PIN               16  //gpio1.16  P9.15
 #define MOT_BRAKE_EN            20    // gpio0.20  P9.41
-#define MOT_1_POL               1    // polarity of motor 1
-#define MOT_2_POL               -1    // polarity of motor 2
+#define MOT_1_POL               -1    // polarity of motor 1
+#define MOT_2_POL               1    // polarity of motor 2
 #define ENC_1_POL               1    // polarity of encoder 1
 #define ENC_2_POL               -1    // polarity of encoder 2
-#define MOT_1_CS                3    // analog in of motor 1 current sense
-#define MOT_2_CS                4    // analog in of motor 2 current sense
+#define MOT_1_CS                0    // analog in of motor 1 current sense
+#define MOT_2_CS                1    // analog in of motor 2 current sense
 #define GEAR_RATIO              20.4  // gear ratio of motor
 #define ENCODER_RES             48.0  // encoder counts per motor shaft revolution
+#define ENCODER_TICKS_TO_ROT    1/(GEAR_RATIO * ENCODER_RES)
 #define WHEEL_DIAMETER          0.08 // diameter of wheel in meters
 #define WHEEL_BASE              0.15  // wheel separation distance in meters
 #define FWD_VEL_SENSITIVITY     0.1   // sensitivity of RC control for moving
