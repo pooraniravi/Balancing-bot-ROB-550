@@ -6,15 +6,8 @@ RR = 5.6;
 
 %%
 % always strip the first few values because they have high relative noise
-leftData = {11.67, 'data/left.1.csv'
-10.74 , 'data/left.0.8.csv'
-8.98 , 'data/left.0.6.csv'
-7.80 , 'data/left.0.5.csv'};
-rightData = {6.29 , 'data/right.0.5.csv'
-7.65 , 'data/right.0.6.csv'
-10.15 , 'data/right.0.8.csv'
-11.67 , 'data/right.1.csv'};
-rightData = flipud(rightData);
+leftData = {11.67, 'data/left.1.csv'};
+rightData = {11.67 , 'data/right.1.csv'};
 
 
 [VL, WL, RIL, maxNL, ~, ~] = loadMeasurements(leftData, RL, -1);
