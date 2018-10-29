@@ -4,10 +4,15 @@
 typedef struct mb_state mb_state_t;
 struct mb_state{
     // raw sensor inputs
-    float   theta;             // body angle (rad)
-    float   phi;               // average wheel angle (rad)
+    double   theta;             // body angle (rad)
+    double   thetaDot;
+    double   phi;               // average wheel angle (rad)
+    double   phiDot;
     int     left_encoder;      // left encoder counts since last reading
     int     right_encoder;     // right encoder counts since last reading
+
+    // time to get dt
+    double t;
 
     //outputs
     float   left_cmd;  //left wheel command [-1..1]
