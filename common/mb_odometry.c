@@ -7,12 +7,17 @@
 
 #include "../balancebot/balancebot.h"
 #include "../common/mb_defs.h"
+#include <rc/encoder_eqep.h>
 #include <math.h>
+#include <rc/math.h>
+#include <rc/time.h>
+#include <sys/time.h>
 
+# define PI		3.14159265358979323846
 // TODO: determine left and right wheel diameter and distinguish them here
-const float TICKS_TO_M_L = ENCODER_TICKS_TO_ROT * M_PI * WHEEL_DIAMETER;
-const float TICKS_TO_M_R = ENCODER_TICKS_TO_ROT * M_PI * WHEEL_DIAMETER;
-const double TICKS_TO_RAD = ENCODER_TICKS_TO_ROT * 2 * M_PI;
+const float TICKS_TO_M_L = ENCODER_TICKS_TO_ROT * PI * WHEEL_DIAMETER;
+const float TICKS_TO_M_R = ENCODER_TICKS_TO_ROT * PI * WHEEL_DIAMETER;
+const double TICKS_TO_RAD = ENCODER_TICKS_TO_ROT * 2 * PI;
 
 void mb_odometry_init(mb_odometry_t* mb_odometry, float x, float y, float theta){
     mb_odometry->x = x;
@@ -27,13 +32,16 @@ double now(void) {
 }
 
 void mb_odometry_update(mb_odometry_t* mb_odometry, mb_state_t* mb_state, double dt){
+    const int dL = mb_state->left_encoder * MOT_2_POL;
+    const int dR = mb_state->right_encoder * MOT_1_POL;
+
     // Differential drive odometry with psi in [-pi, pi]
     // displacements
-    const float dSL = mb_state->left_encoder * TICKS_TO_M_L;
-    const float dSR = mb_state->right_encoder * TICKS_TO_M_R;
+    const float dSL = dL * TICKS_TO_M_L;
+    const float dSR = dR * TICKS_TO_M_R;
 
     // average dphi not over dt yet
-    const double dphi = (double)(mb_state->right_encoder - mb_state->left_encoder) / 2 * TICKS_TO_RAD;
+    const double dphi = (double)(dR - dL) / 2 * TICKS_TO_RAD;
 
     // d ~ dS (straight line approximation for travelling along curve)
     const float d = (dSL + dSR) / 2;
@@ -55,11 +63,11 @@ void mb_odometry_update(mb_odometry_t* mb_odometry, mb_state_t* mb_state, double
 
 
 float mb_clamp_radians(float angle){
-    while (angle > M_PI) {
-        angle -= 2 * M_PI;
+    while (angle > PI) {
+        angle -= 2 * PI;
     }
-    while (angle < -M_PI) {
-        angle += 2 * M_PI;
+    while (angle < -PI) {
+        angle += 2 * PI;
     }
     return angle;
 }

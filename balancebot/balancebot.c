@@ -146,6 +146,7 @@ int main() {
     // exit cleanly
     rc_mpu_power_off();
     mb_motor_cleanup();
+    mb_controller_cleanup();
     rc_led_cleanup();
     rc_encoder_eqep_cleanup();
     rc_remove_pid_file(); // remove pid file LAST
@@ -171,12 +172,16 @@ void balancebot_controller() {
     const double dt = t - mb_state.t;
 
     const double theta = mpu_data.dmp_TaitBryan[TB_PITCH_X];
-    
+
+    mb_state.t = t;
+    mb_state.dt = dt;
     mb_state.thetaDot = (theta - mb_state.theta) / dt;
     mb_state.theta = theta;
     // Read encoders
     mb_state.left_encoder = rc_encoder_eqep_read(1);
     mb_state.right_encoder = rc_encoder_eqep_read(2);
+
+    resetEncoders();
 
     // Update odometry
     mb_odometry_update(&mb_odometry, &mb_state, dt);
@@ -241,6 +246,8 @@ void *printf_loop(void *ptr) {
             printf("    X    |");
             printf("    Y    |");
             printf("    ψ    |");
+            printf("    θdot |");
+            printf("    φdot |");
 
             printf("\n");
         } else if (new_state == PAUSED && last_state != PAUSED) {
@@ -256,6 +263,12 @@ void *printf_loop(void *ptr) {
             printf("%7.3f  |", mb_state.phi);
             printf("%7d  |", mb_state.left_encoder);
             printf("%7d  |", mb_state.right_encoder);
+            printf("%7.3f  |", mb_odometry.x);
+            printf("%7.3f  |", mb_odometry.y);
+            printf("%7.3f  |", mb_odometry.psi);
+            printf("%7.3f  |", mb_state.thetaDot);
+            printf("%7.3f  |", mb_state.phiDot);
+            printf("%7.8f", mb_state.dt);
             pthread_mutex_unlock(&state_mutex);
             fflush(stdout);
         }

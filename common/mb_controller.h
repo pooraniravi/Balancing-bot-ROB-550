@@ -3,7 +3,7 @@
 
 
 #include "mb_structs.h"
-#define CFG_PATH "pid.cfg"
+#define CFG_PATH "lqr.cfg"
 
 int mb_controller_init();
 int mb_controller_load_config();

@@ -13,6 +13,7 @@ struct mb_state{
 
     // time to get dt
     double t;
+    double dt;
 
     //outputs
     float   left_cmd;  //left wheel command [-1..1]
