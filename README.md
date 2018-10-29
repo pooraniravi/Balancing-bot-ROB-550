@@ -81,3 +81,10 @@ Right b: 0.000263 +/- 0.004255
 
 Left J: 0.000046 +/- 0.000699
 Right J: 0.000114 +/- 0.002082
+
+## Determining odometry parameters
+- attach castor to enable stable driving
+- manually push robot along straight line of known length to determine wheel diameters
+    - record the number of ticks per distance and divide to get ticks per m
+- after outer loop controller is ready have robot turn in place to determine baseline
+    - adjust baseline until its perceived full turn corresponds to an actual full turn
