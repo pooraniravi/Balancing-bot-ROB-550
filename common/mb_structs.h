@@ -4,12 +4,19 @@
 typedef struct mb_state mb_state_t;
 struct mb_state{
     // raw sensor inputs
+    int     left_encoder;      // left encoder counts since last reading
+    int     right_encoder;     // right encoder counts since last reading
+
+    // LQR controller relevant state
     double   theta;             // body angle (rad)
     double   thetaDot;
     double   phi;               // average wheel angle (rad)
     double   phiDot;
-    int     left_encoder;      // left encoder counts since last reading
-    int     right_encoder;     // right encoder counts since last reading
+
+    // heading controller state
+    double gyroHeading;
+    // gyrodometry blended heading
+    double heading;
 
     // time to get dt
     double t;
@@ -33,9 +40,9 @@ struct mb_setpoints{
 typedef struct mb_odometry mb_odometry_t;
 struct mb_odometry{
 
-    float x;        //x position from initialization in m
-    float y;        //y position from initialization in m
-    float psi;      //orientation from initialization in rad
+    double x;        //x position from initialization in m
+    double y;        //y position from initialization in m
+    double dHeading; //incremental heading in rad
 };
 
 #endif

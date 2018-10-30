@@ -21,6 +21,9 @@
 
 #include "balancebot.h"
 
+// threshold on the difference between gyro and odometry incremental heading
+// TODO determine heading threshold for gyrodometry by recording difference in dHeading from odometry and gyro
+const double GYRODOMETRY_THRESHOLD_RAD = 0.1;
 /*******************************************************************************
 * int main() 
 *
@@ -172,6 +175,7 @@ void balancebot_controller() {
     const double dt = t - mb_state.t;
 
     const double theta = mpu_data.dmp_TaitBryan[TB_PITCH_X];
+    const double heading = mpu_data.dmp_TaitBryan[TB_YAW_Z];
 
     mb_state.t = t;
     mb_state.dt = dt;
@@ -185,6 +189,18 @@ void balancebot_controller() {
 
     // Update odometry
     mb_odometry_update(&mb_odometry, &mb_state, dt);
+    const double dOdometryHeading = mb_odometry.dHeading;
+    const double dGyroHeading = mb_state.gyroHeading - heading;
+    mb_state.gyroHeading = heading;
+
+    // gyrodometry
+    if (fabs(dGyroHeading - dOdometryHeading) > GYRODOMETRY_THRESHOLD_RAD) {
+        mb_state.heading += dGyroHeading;
+    } else {
+        mb_state.heading += dOdometryHeading;
+    }
+    mb_state.heading = mb_clamp_radians(mb_state.heading);
+
 
     // Calculate controller outputs
     mb_controller_update(&mb_state);
@@ -265,7 +281,7 @@ void *printf_loop(void *ptr) {
             printf("%7d  |", mb_state.right_encoder);
             printf("%7.3f  |", mb_odometry.x);
             printf("%7.3f  |", mb_odometry.y);
-            printf("%7.3f  |", mb_odometry.psi);
+            printf("%7.3f  |", mb_odometry.dHeading);
             printf("%7.3f  |", mb_state.thetaDot);
             printf("%7.3f  |", mb_state.phiDot);
             printf("%7.8f", mb_state.dt);
