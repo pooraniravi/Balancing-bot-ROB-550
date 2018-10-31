@@ -91,7 +91,7 @@ int main() {
     // set up mpu configuration
     rc_mpu_config_t mpu_config = rc_mpu_default_config();
     mpu_config.dmp_sample_rate = SAMPLE_RATE_HZ;
-    mpu_config.orient = ORIENTATION_Z_UP;
+    mpu_config.orient = ORIENTATION_Z_DOWN;
 
     // now set up the imu for dmp interrupt operation
     if (rc_mpu_initialize_dmp(&mpu_data, mpu_config)) {
@@ -180,7 +180,7 @@ void balancebot_controller() {
     // correct for theta such that it's 0 when the robot is standing upright
     // this is the phi in http://ctms.engin.umich.edu/CTMS/index.php?example=InvertedPendulum&section=SystemModeling
     const double theta =
-        mb_clamp_radians(mpu_data.dmp_TaitBryan[TB_PITCH_X] - PI);
+        mb_clamp_radians(mpu_data.dmp_TaitBryan[TB_PITCH_X]);
     const double heading = mpu_data.dmp_TaitBryan[TB_YAW_Z];
 
     mb_state.t = t;
@@ -292,7 +292,9 @@ void* printf_loop(void* ptr) {
             printf("%7.3f  |", mb_state.heading);
             printf("%7.3f  |", mb_state.thetaDot);
             printf("%7.3f  |", mb_state.phiDot);
-            printf("%7.8f", mb_state.dt);
+            printf("%7.3f  |", mb_state.left_cmd);
+            printf("%7.3f  |", mb_state.right_cmd);
+            printf("\n");
             pthread_mutex_unlock(&state_mutex);
             fflush(stdout);
         }
