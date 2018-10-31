@@ -1,33 +1,34 @@
 /*******************************************************************************
-* balancebot.c
-*
-* Main template code for the BalanceBot Project
-* based on rc_balance
-* 
-*******************************************************************************/
+ * balancebot.c
+ *
+ * Main template code for the BalanceBot Project
+ * based on rc_balance
+ *
+ *******************************************************************************/
 
-#include <rc/start_stop.h>
 #include <rc/adc.h>
-#include <rc/servo.h>
-#include <rc/mpu.h>
-#include <rc/dsm.h>
-#include <rc/cpu.h>
 #include <rc/bmp.h>
 #include <rc/button.h>
-#include <rc/led.h>
-#include <rc/pthread.h>
+#include <rc/cpu.h>
+#include <rc/dsm.h>
 #include <rc/encoder_eqep.h>
+#include <rc/led.h>
+#include <rc/mpu.h>
+#include <rc/pthread.h>
+#include <rc/servo.h>
+#include <rc/start_stop.h>
 #include <rc/time.h>
 
 #include "balancebot.h"
 
 // threshold on the difference between gyro and odometry incremental heading
-// TODO determine heading threshold for gyrodometry by recording difference in dHeading from odometry and gyro
+// TODO determine heading threshold for gyrodometry by recording difference in
+// dHeading from odometry and gyro
 const double GYRODOMETRY_THRESHOLD_RAD = 0.1;
 /*******************************************************************************
-* int main() 
-*
-*******************************************************************************/
+ * int main()
+ *
+ *******************************************************************************/
 int main() {
     // make sure another instance isn't running
     // if return value is -3 then a background process is running with
@@ -75,12 +76,13 @@ int main() {
     // if it was started as a background process then don't bother
     printf("starting print thread... \n");
     pthread_t printf_thread;
-    rc_pthread_create(&printf_thread, printf_loop, (void *) NULL, SCHED_OTHER, 0);
+    rc_pthread_create(&printf_thread, printf_loop, (void*)NULL, SCHED_OTHER, 0);
 
     // start control thread
     printf("starting setpoint thread... \n");
     pthread_t setpoint_control_thread;
-    rc_pthread_create(&setpoint_control_thread, setpoint_control_loop, (void *) NULL, SCHED_FIFO, 50);
+    rc_pthread_create(&setpoint_control_thread, setpoint_control_loop,
+                      (void*)NULL, SCHED_FIFO, 50);
 
     // TODO: start motion capture message recieve thread
 
@@ -97,13 +99,13 @@ int main() {
         return -1;
     }
 
-    //rc_nanosleep(5E9); // wait for imu to stabilize
+    // rc_nanosleep(5E9); // wait for imu to stabilize
 
-    //initialize state mutex
+    // initialize state mutex
     pthread_mutex_init(&state_mutex, NULL);
     pthread_mutex_init(&setpoint_mutex, NULL);
 
-    //attach controller function to IMU interrupt
+    // attach controller function to IMU interrupt
     printf("initializing controller...\n");
     if (mb_controller_init() == -1) {
         printf("controller initialization failed\n");
@@ -123,6 +125,7 @@ int main() {
     printf("initializing state...\n");
     mb_state.t = now();
     mb_state.phi = 0;
+    mb_state.heading = 0;
 
     printf("initializing odometry...\n");
     mb_odometry_init(&mb_odometry, 0.0, 0.0, 0.0);
@@ -157,24 +160,27 @@ int main() {
 }
 
 /*******************************************************************************
-* void balancebot_controller()
-*
-* discrete-time balance controller operated off IMU interrupt
-* Called at SAMPLE_RATE_HZ
-*
-* TODO: You must implement this function to keep the balancebot balanced
-* 
-*
-*******************************************************************************/
+ * void balancebot_controller()
+ *
+ * discrete-time balance controller operated off IMU interrupt
+ * Called at SAMPLE_RATE_HZ
+ *
+ * TODO: You must implement this function to keep the balancebot balanced
+ *
+ *
+ *******************************************************************************/
 void balancebot_controller() {
 
-    //lock state mutex
+    // lock state mutex
     pthread_mutex_lock(&state_mutex);
     // Read IMU
     const double t = now();
     const double dt = t - mb_state.t;
 
-    const double theta = mpu_data.dmp_TaitBryan[TB_PITCH_X];
+    // correct for theta such that it's 0 when the robot is standing upright
+    // this is the phi in http://ctms.engin.umich.edu/CTMS/index.php?example=InvertedPendulum&section=SystemModeling
+    const double theta =
+        mb_clamp_radians(mpu_data.dmp_TaitBryan[TB_PITCH_X] - PI);
     const double heading = mpu_data.dmp_TaitBryan[TB_YAW_Z];
 
     mb_state.t = t;
@@ -201,39 +207,38 @@ void balancebot_controller() {
     }
     mb_state.heading = mb_clamp_radians(mb_state.heading);
 
-
     // Calculate controller outputs
     mb_controller_update(&mb_state);
 
     if (!mb_setpoints.manual_ctl) {
-        //send motor commands
+        // send motor commands
         mb_motor_set(LEFT_MOTOR, mb_state.left_cmd);
         mb_motor_set(RIGHT_MOTOR, mb_state.right_cmd);
     }
 
     if (mb_setpoints.manual_ctl) {
-        //send motor commands
+        // send motor commands
     }
 
-    //unlock state mutex
+    // unlock state mutex
     pthread_mutex_unlock(&state_mutex);
 }
 
 /*******************************************************************************
-*  setpoint_control_loop()
-*
-*  sets current setpoints based on dsm radio data, odometry, and Optitrak
-*
-*
-*******************************************************************************/
-void *setpoint_control_loop(void *ptr) {
+ *  setpoint_control_loop()
+ *
+ *  sets current setpoints based on dsm radio data, odometry, and Optitrak
+ *
+ *
+ *******************************************************************************/
+void* setpoint_control_loop(void* ptr) {
 
     while (1) {
 
         if (rc_dsm_is_new_data()) {
             // TODO: Handle the DSM data from the Spektrum radio reciever
-            // You may should implement switching between manual and autonomous mode
-            // using channel 5 of the DSM data.
+            // You may should implement switching between manual and autonomous
+            // mode using channel 5 of the DSM data.
         }
         rc_nanosleep(1E9 / RC_CTL_HZ);
     }
@@ -241,21 +246,22 @@ void *setpoint_control_loop(void *ptr) {
 }
 
 /*******************************************************************************
-* printf_loop() 
-*
-* prints diagnostics to console
-* this only gets started if executing from terminal
-*
-* TODO: Add other data to help you tune/debug your code
-*******************************************************************************/
-void *printf_loop(void *ptr) {
+ * printf_loop()
+ *
+ * prints diagnostics to console
+ * this only gets started if executing from terminal
+ *
+ * TODO: Add other data to help you tune/debug your code
+ *******************************************************************************/
+void* printf_loop(void* ptr) {
     rc_state_t last_state, new_state; // keep track of last state
     while (rc_get_state() != EXITING) {
         new_state = rc_get_state();
         // check if this is the first time since being paused
         if (new_state == RUNNING && last_state != RUNNING) {
             printf("\nRUNNING: Hold upright to balance.\n");
-            printf("                 SENSORS               |           ODOMETRY          |");
+            printf("                 SENSORS               |           "
+                   "ODOMETRY          |");
             printf("\n");
             printf("    θ    |");
             printf("    φ    |");
@@ -275,7 +281,7 @@ void *printf_loop(void *ptr) {
 
         if (new_state == RUNNING) {
             printf("\r");
-            //Add Print stattements here, do not follow with /n
+            // Add Print stattements here, do not follow with /n
             pthread_mutex_lock(&state_mutex);
             printf("%7.3f  |", mb_state.theta);
             printf("%7.3f  |", mb_state.phi);
