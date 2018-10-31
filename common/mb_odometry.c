@@ -13,7 +13,6 @@
 #include <rc/time.h>
 #include <sys/time.h>
 
-# define PI		3.14159265358979323846
 // TODO: determine left and right wheel diameter and distinguish them here
 const double TICKS_TO_M_L = ENCODER_TICKS_TO_ROT * PI * WHEEL_DIAMETER;
 const double TICKS_TO_M_R = ENCODER_TICKS_TO_ROT * PI * WHEEL_DIAMETER;
@@ -41,7 +40,7 @@ void mb_odometry_update(mb_odometry_t* mb_odometry, mb_state_t* mb_state, double
     const double dSR = dR * TICKS_TO_M_R;
 
     // average dphi not over dt yet
-    const double dphi = (double)(dR - dL) / 2 * TICKS_TO_RAD;
+    const double dphi = (double)(dR + dL) / 2 * TICKS_TO_RAD;
 
     // d ~ dS (straight line approximation for travelling along curve)
     const double d = (dSL + dSR) / 2;

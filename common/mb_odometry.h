@@ -8,6 +8,7 @@
 
 #include "mb_defs.h"
 #include "mb_structs.h"
+# define PI		3.14159265358979323846
 
 void mb_odometry_init(mb_odometry_t* mb_odometry, float x, float y, float theta);
 void mb_odometry_update(mb_odometry_t* mb_odometry, mb_state_t* mb_state, double dt);

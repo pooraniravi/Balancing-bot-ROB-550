@@ -289,7 +289,7 @@ void* printf_loop(void* ptr) {
             printf("%7d  |", mb_state.right_encoder);
             printf("%7.3f  |", mb_odometry.x);
             printf("%7.3f  |", mb_odometry.y);
-            printf("%7.3f  |", mb_odometry.dHeading);
+            printf("%7.3f  |", mb_state.heading);
             printf("%7.3f  |", mb_state.thetaDot);
             printf("%7.3f  |", mb_state.phiDot);
             printf("%7.8f", mb_state.dt);
