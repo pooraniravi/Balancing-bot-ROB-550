@@ -207,6 +207,8 @@ void balancebot_controller() {
 
     if (!mb_setpoints.manual_ctl) {
         //send motor commands
+        mb_motor_set(LEFT_MOTOR, mb_state.left_cmd);
+        mb_motor_set(RIGHT_MOTOR, mb_state.right_cmd);
     }
 
     if (mb_setpoints.manual_ctl) {
