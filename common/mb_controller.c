@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <rc/math.h>
+#include <rc/math/filter.h>
 #include "mb_controller.h"
 #include "mb_defs.h"
 
@@ -19,17 +20,12 @@
 *
 *******************************************************************************/
 
-rc_matrix_t K = RC_MATRIX_INITIALIZER;
-rc_vector_t x = RC_VECTOR_INITIALIZER;
-rc_vector_t u = RC_VECTOR_INITIALIZER;
+rc_filter_t thetaController = RC_FILTER_INITIALIZER;
 
 int mb_controller_init() {
-    rc_matrix_zeros(&K, 1, 4);
-    rc_vector_zeros(&x, 4);
-    rc_vector_zeros(&u, 1);
-
-    mb_controller_load_config();
-    /* TODO initialize your controllers here*/
+    if (mb_controller_load_config() != 0) {
+        return -1;
+    }
 
     return 0;
 }
@@ -46,14 +42,21 @@ int mb_controller_init() {
 
 
 int mb_controller_load_config() {
-    FILE *file = fopen(CFG_PATH, "r");
+    FILE *file = fopen(PID_PATH, "r");
     if (file == NULL) {
         printf("Error opening %s\n", CFG_PATH);
         return -1;
     }
 
-    fscanf(file, "%lf %lf %lf %lf", &K.d[0][0], &K.d[0][1], &K.d[0][2], &K.d[0][3]);
-    rc_matrix_print(K);
+    double kpTheta, kiTheta, kdTheta;
+    fscanf(file, "%lf %lf %lf", &kpTheta, &kiTheta, &kdTheta);
+
+    if(rc_filter_pid(&thetaController, kpTheta, kiTheta, kdTheta, 4*DT, DT)){
+        fprintf(stderr,"ERROR in rc_balance, failed to make theta controller\n");
+        return -1;
+    }
+    rc_filter_enable_saturation(&thetaController, -1, 1);
+
 
     fclose(file);
     return 0;
@@ -74,15 +77,11 @@ int mb_controller_load_config() {
 
 int mb_controller_update(mb_state_t *mb_state) {
     // u = -Kx (configuration file holds negative K already)
-    // TODO: add in reference state so u = rN - Kx
-    x.d[0] = mb_state->theta;
-    x.d[1] = mb_state->thetaDot;
-    x.d[2] = mb_state->phi;
-    x.d[3] = mb_state->phiDot;
+    // inner theta controller
 
-    rc_matrix_times_col_vec(K,x,&u);
-    mb_state->left_cmd = u.d[0];
-    mb_state->right_cmd = u.d[0];
+    const double u = rc_filter_march(&thetaController, 0 - mb_state->theta);
+    mb_state->left_cmd = u;
+    mb_state->right_cmd = u;
 
     return 0;
 }
@@ -98,8 +97,6 @@ int mb_controller_update(mb_state_t *mb_state) {
 *******************************************************************************/
 
 int mb_controller_cleanup() {
-    rc_matrix_free(&K);
-    rc_vector_free(&x);
-    rc_vector_free(&u);
+    rc_filter_free(&thetaController);
     return 0;
 }
