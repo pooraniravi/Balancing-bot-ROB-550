@@ -37,6 +37,11 @@ struct mb_setpoints{
     int manual_ctl;
 };
 
+typedef struct {
+    // for now just a phi; consider attaching x,y,heading to here
+    double phi;
+} Setpoint;
+
 typedef struct mb_odometry mb_odometry_t;
 struct mb_odometry{
 

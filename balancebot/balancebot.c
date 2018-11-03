@@ -25,6 +25,8 @@
 // TODO determine heading threshold for gyrodometry by recording difference in
 // dHeading from odometry and gyro
 const double GYRODOMETRY_THRESHOLD_RAD = 0.1;
+Setpoint setpoint;
+
 /*******************************************************************************
  * int main()
  *
@@ -127,6 +129,10 @@ int main() {
     mb_state.phi = 0;
     mb_state.heading = 0;
 
+    printf("initializing setpoint...\n");
+    // drive 2 rad forward
+    setpoint.phi = 2;
+
     printf("initializing odometry...\n");
     mb_odometry_init(&mb_odometry, 0.0, 0.0, 0.0);
 
@@ -178,9 +184,9 @@ void balancebot_controller() {
     const double dt = t - mb_state.t;
 
     // correct for theta such that it's 0 when the robot is standing upright
-    // this is the phi in http://ctms.engin.umich.edu/CTMS/index.php?example=InvertedPendulum&section=SystemModeling
-    const double theta =
-        mb_clamp_radians(mpu_data.dmp_TaitBryan[TB_PITCH_X]);
+    // this is the phi in
+    // http://ctms.engin.umich.edu/CTMS/index.php?example=InvertedPendulum&section=SystemModeling
+    const double theta = mb_clamp_radians(mpu_data.dmp_TaitBryan[TB_PITCH_X]);
     const double heading = mpu_data.dmp_TaitBryan[TB_YAW_Z];
 
     mb_state.t = t;
@@ -208,7 +214,7 @@ void balancebot_controller() {
     mb_state.heading = mb_clamp_radians(mb_state.heading);
 
     // Calculate controller outputs
-    mb_controller_update(&mb_state);
+    mb_controller_update(&mb_state, setpoint);
 
     if (!mb_setpoints.manual_ctl) {
         // send motor commands
