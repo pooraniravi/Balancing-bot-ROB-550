@@ -7,6 +7,10 @@ struct mb_state{
     int     left_encoder;      // left encoder counts since last reading
     int     right_encoder;     // right encoder counts since last reading
 
+    // incremental velocity
+    double vL;
+    double vR;
+
     // LQR controller relevant state
     double   theta;             // body angle (rad)
     double   thetaDot;

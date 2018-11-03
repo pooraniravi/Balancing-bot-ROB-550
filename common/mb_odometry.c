@@ -31,8 +31,8 @@ double now(void) {
 }
 
 void mb_odometry_update(mb_odometry_t* mb_odometry, mb_state_t* mb_state, double dt){
-    const int dL = mb_state->left_encoder * MOT_2_POL;
-    const int dR = mb_state->right_encoder * MOT_1_POL;
+    const int dL = mb_state->left_encoder * ENC_2_POL;
+    const int dR = mb_state->right_encoder * ENC_1_POL;
 
     // Differential drive odometry with dHeading in [-pi, pi]
     // displacements
@@ -54,6 +54,8 @@ void mb_odometry_update(mb_odometry_t* mb_odometry, mb_state_t* mb_state, double
     // apply update to odometry and state
     mb_state->phiDot = dphi / dt;
     mb_state->phi += dphi;
+    mb_state->vL = dSL / dt;
+    mb_state->vR = dSR / dt;
 
     mb_odometry->x += dx;
     mb_odometry->y += dy;

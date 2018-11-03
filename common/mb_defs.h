@@ -9,6 +9,9 @@
 #ifndef MB_DEFS_H
 #define MB_DEFS_H
 
+# define PI		3.14159265358979323846
+
+// 1 is RIGHT 2 is LEFT
 #define DEFAULT_PWM_FREQ        25000 // period of motor drive pwm
 #define LEFT_MOTOR              2     // id of left motor
 #define RIGHT_MOTOR             1     // id of right motor
