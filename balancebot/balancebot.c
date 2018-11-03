@@ -78,13 +78,13 @@ int main() {
     // if it was started as a background process then don't bother
     printf("starting print thread... \n");
     pthread_t printf_thread;
-    rc_pthread_create(&printf_thread, printf_loop, (void*)NULL, SCHED_OTHER, 0);
+    rc_pthread_create(&printf_thread, printf_loop, (void *) NULL, SCHED_OTHER, 0);
 
     // start control thread
     printf("starting setpoint thread... \n");
     pthread_t setpoint_control_thread;
     rc_pthread_create(&setpoint_control_thread, setpoint_control_loop,
-                      (void*)NULL, SCHED_FIFO, 50);
+                      (void *) NULL, SCHED_FIFO, 50);
 
     // TODO: start motion capture message recieve thread
 
@@ -194,8 +194,8 @@ void balancebot_controller() {
     mb_state.thetaDot = (theta - mb_state.theta) / dt;
     mb_state.theta = theta;
     // Read encoders
-    mb_state.left_encoder = rc_encoder_eqep_read(1);
-    mb_state.right_encoder = rc_encoder_eqep_read(2);
+    mb_state.left_encoder = rc_encoder_eqep_read(LEFT_MOTOR);
+    mb_state.right_encoder = rc_encoder_eqep_read(RIGHT_MOTOR);
 
     resetEncoders();
 
@@ -237,7 +237,7 @@ void balancebot_controller() {
  *
  *
  *******************************************************************************/
-void* setpoint_control_loop(void* ptr) {
+void *setpoint_control_loop(void *ptr) {
 
     while (1) {
 
@@ -259,7 +259,7 @@ void* setpoint_control_loop(void* ptr) {
  *
  * TODO: Add other data to help you tune/debug your code
  *******************************************************************************/
-void* printf_loop(void* ptr) {
+void *printf_loop(void *ptr) {
     rc_state_t last_state, new_state; // keep track of last state
     while (rc_get_state() != EXITING) {
         new_state = rc_get_state();
@@ -298,6 +298,9 @@ void* printf_loop(void* ptr) {
             printf("%7.3f  |", mb_state.heading);
             printf("%7.3f  |", mb_state.thetaDot);
             printf("%7.3f  |", mb_state.phiDot);
+//            printf("%7.3f  |", setpoint.phi);
+//            printf("%7.3f  |", mb_state.vL);
+//            printf("%7.3f  |", mb_state.vR);
             printf("%7.3f  |", mb_state.left_cmd);
             printf("%7.3f  |", mb_state.right_cmd);
             printf("\n");
