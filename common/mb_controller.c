@@ -132,25 +132,27 @@ int mb_controller_load_config() {
  *
  *******************************************************************************/
 
-int mb_controller_update(mb_state_t *mb_state, Setpoint* sp) {
+int mb_controller_update(mb_state_t *mb_state, Setpoint *sp) {
     // u = -Kx (configuration file holds negative K already)
 
+    // uncomment below to use PID controller
     // phi controller negated because dphi will be neagtive when theta is positive
-//   sp->theta =
-//        rc_filter_march(&phiController, sp->phi - mb_state->phi);
-//    if (fabs(sp->theta) < 0.005) {
-//        sp->theta = 0;
-//    }
-//    // linear velocity
-//    const double desiredVelocity =
-//            rc_filter_march(&thetaController, sp->theta - mb_state->theta);
+    sp->theta =
+            rc_filter_march(&phiController, sp->phi - mb_state->phi);
+    if (fabs(sp->theta) < 0.005) {
+        sp->theta = 0;
+    }
+    // linear velocity
+    const double desiredVelocity =
+            rc_filter_march(&thetaController, sp->theta - mb_state->theta);
 
-    x.d[0] = mb_state->theta;
-    x.d[1] = mb_state->thetaDot;
-    x.d[2] = mb_state->phi - sp->phi;
-    x.d[3] = mb_state->phiDot;
-    rc_matrix_times_col_vec(K,x,&u);
-    const double desiredVelocity = u.d[0];
+    // uncomment below to use LQR controller
+//    x.d[0] = mb_state->theta;
+//    x.d[1] = mb_state->thetaDot;
+//    x.d[2] = mb_state->phi - sp->phi;
+//    x.d[3] = mb_state->phiDot;
+//    rc_matrix_times_col_vec(K,x,&u);
+//    const double desiredVelocity = u.d[0];
 
     const double l = rc_filter_march(&lController, desiredVelocity - mb_state->vL);
     const double r = rc_filter_march(&rController, desiredVelocity - mb_state->vR);
