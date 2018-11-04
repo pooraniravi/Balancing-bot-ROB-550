@@ -44,6 +44,7 @@ struct mb_setpoints{
 typedef struct {
     // for now just a phi; consider attaching x,y,heading to here
     double phi;
+    double theta;
 } Setpoint;
 
 typedef struct mb_odometry mb_odometry_t;

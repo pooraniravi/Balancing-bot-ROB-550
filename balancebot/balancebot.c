@@ -214,7 +214,8 @@ void balancebot_controller() {
     mb_state.heading = mb_clamp_radians(mb_state.heading);
 
     // Calculate controller outputs
-    mb_controller_update(&mb_state, setpoint);
+    setpoint.phi = 0;
+    mb_controller_update(&mb_state, &setpoint);
 
     if (!mb_setpoints.manual_ctl) {
         // send motor commands
@@ -291,16 +292,17 @@ void *printf_loop(void *ptr) {
             pthread_mutex_lock(&state_mutex);
             printf("%7.3f  |", mb_state.theta);
             printf("%7.3f  |", mb_state.phi);
-            printf("%7d  |", mb_state.left_encoder);
-            printf("%7d  |", mb_state.right_encoder);
-            printf("%7.3f  |", mb_odometry.x);
-            printf("%7.3f  |", mb_odometry.y);
-            printf("%7.3f  |", mb_state.heading);
+//            printf("%7d  |", mb_state.left_encoder);
+//            printf("%7d  |", mb_state.right_encoder);
+//            printf("%7.3f  |", mb_odometry.x);
+//            printf("%7.3f  |", mb_odometry.y);
+//            printf("%7.3f  |", mb_state.heading);
             printf("%7.3f  |", mb_state.thetaDot);
             printf("%7.3f  |", mb_state.phiDot);
-//            printf("%7.3f  |", setpoint.phi);
-//            printf("%7.3f  |", mb_state.vL);
-//            printf("%7.3f  |", mb_state.vR);
+            printf("%7.3f  |", setpoint.phi);
+            printf("%7.3f  |", setpoint.theta);
+            printf("%7.3f  |", mb_state.vL);
+            printf("%7.3f  |", mb_state.vR);
             printf("%7.3f  |", mb_state.left_cmd);
             printf("%7.3f  |", mb_state.right_cmd);
             printf("\n");

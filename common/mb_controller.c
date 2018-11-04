@@ -20,13 +20,24 @@
  *
  *******************************************************************************/
 
+// PID controllers
 rc_filter_t thetaController = RC_FILTER_INITIALIZER;
 rc_filter_t phiController = RC_FILTER_INITIALIZER;
 rc_filter_t lController = RC_FILTER_INITIALIZER;
 rc_filter_t rController = RC_FILTER_INITIALIZER;
 
+// LQR controller
+rc_matrix_t K = RC_MATRIX_INITIALIZER;
+rc_vector_t x = RC_VECTOR_INITIALIZER;
+rc_vector_t u = RC_VECTOR_INITIALIZER;
+
 
 int mb_controller_init() {
+    rc_matrix_zeros(&K, 1, 4);
+    rc_vector_zeros(&x, 4);
+    rc_vector_zeros(&u, 1);
+
+
     if (mb_controller_load_config() != 0) {
         return -1;
     }
@@ -94,6 +105,17 @@ int mb_controller_load_config() {
     rc_filter_enable_saturation(&rController, -1, 1);
 
     fclose(file);
+
+    file = fopen(CFG_PATH, "r");
+    if (file == NULL) {
+        printf("Error opening %s\n", CFG_PATH);
+        return -1;
+    }
+
+    fscanf(file, "%lf %lf %lf %lf", &K.d[0][0], &K.d[0][1], &K.d[0][2], &K.d[0][3]);
+    rc_matrix_print(K);
+
+    fclose(file);
     return 0;
 }
 
@@ -110,14 +132,25 @@ int mb_controller_load_config() {
  *
  *******************************************************************************/
 
-int mb_controller_update(mb_state_t *mb_state, Setpoint sp) {
+int mb_controller_update(mb_state_t *mb_state, Setpoint* sp) {
     // u = -Kx (configuration file holds negative K already)
 
-    double desiredTheta = 0;
-//        rc_filter_march(&phiController, sp.phi - mb_state->phi);
-    // linear velocity
-    const double desiredVelocity =
-            rc_filter_march(&thetaController, desiredTheta - mb_state->theta);
+    // phi controller negated because dphi will be neagtive when theta is positive
+//   sp->theta =
+//        rc_filter_march(&phiController, sp->phi - mb_state->phi);
+//    if (fabs(sp->theta) < 0.005) {
+//        sp->theta = 0;
+//    }
+//    // linear velocity
+//    const double desiredVelocity =
+//            rc_filter_march(&thetaController, sp->theta - mb_state->theta);
+
+    x.d[0] = mb_state->theta;
+    x.d[1] = mb_state->thetaDot;
+    x.d[2] = mb_state->phi - sp->phi;
+    x.d[3] = mb_state->phiDot;
+    rc_matrix_times_col_vec(K,x,&u);
+    const double desiredVelocity = u.d[0];
 
     const double l = rc_filter_march(&lController, desiredVelocity - mb_state->vL);
     const double r = rc_filter_march(&rController, desiredVelocity - mb_state->vR);
@@ -141,5 +174,9 @@ int mb_controller_cleanup() {
     rc_filter_free(&phiController);
     rc_filter_free(&lController);
     rc_filter_free(&rController);
+    rc_matrix_free(&K);
+    rc_vector_free(&x);
+    rc_vector_free(&u);
+
     return 0;
 }
