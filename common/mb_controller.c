@@ -25,6 +25,7 @@ rc_filter_t thetaController = RC_FILTER_INITIALIZER;
 rc_filter_t phiController = RC_FILTER_INITIALIZER;
 rc_filter_t lController = RC_FILTER_INITIALIZER;
 rc_filter_t rController = RC_FILTER_INITIALIZER;
+rc_filter_t headingController = RC_FILTER_INITIALIZER;
 
 // LQR controller
 rc_matrix_t K = RC_MATRIX_INITIALIZER;
@@ -97,6 +98,12 @@ int mb_controller_load_config() {
         fprintf(stderr, "ERROR in rc_balance, failed to make right controller\n");
         return -1;
     }
+    // just a P controller
+    fscanf(file, "%lf", &kp);
+    if (rc_filter_pid(&headingController, kp, 0, 0, 4 * DT, DT)) {
+        fprintf(stderr, "ERROR in rc_balance, failed to make heading controller\n");
+        return -1;
+    }
 
 
     rc_filter_enable_saturation(&thetaController, -maxThetaVelocity, maxThetaVelocity);
@@ -143,8 +150,12 @@ int mb_controller_update(mb_state_t *mb_state, Setpoint *sp) {
         sp->theta = 0;
     }
     // linear velocity
-    const double desiredVelocity =
+    double sharedVelocity =
             rc_filter_march(&thetaController, sp->theta - mb_state->theta);
+
+    // difference in velocity to allow turning
+    double diffVelocity = (sp->heading < NO_SET_HEADING+1) ? 0 : rc_filter_march(&headingController,
+                                                                                      sp->heading - mb_state->heading);
 
     // uncomment below to use LQR controller
 //    x.d[0] = mb_state->theta;
@@ -152,10 +163,10 @@ int mb_controller_update(mb_state_t *mb_state, Setpoint *sp) {
 //    x.d[2] = mb_state->phi - sp->phi;
 //    x.d[3] = mb_state->phiDot;
 //    rc_matrix_times_col_vec(K,x,&u);
-//    const double desiredVelocity = u.d[0];
+//    const double sharedVelocity = u.d[0];
 
-    const double l = rc_filter_march(&lController, desiredVelocity - mb_state->vL);
-    const double r = rc_filter_march(&rController, desiredVelocity - mb_state->vR);
+    const double l = rc_filter_march(&lController, sharedVelocity - diffVelocity - mb_state->vL);
+    const double r = rc_filter_march(&rController, sharedVelocity + diffVelocity - mb_state->vR);
     mb_state->left_cmd = l;
     mb_state->right_cmd = r;
 
@@ -176,6 +187,7 @@ int mb_controller_cleanup() {
     rc_filter_free(&phiController);
     rc_filter_free(&lController);
     rc_filter_free(&rController);
+    rc_filter_free(&headingController);
     rc_matrix_free(&K);
     rc_vector_free(&x);
     rc_vector_free(&u);

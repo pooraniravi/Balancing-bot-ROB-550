@@ -132,6 +132,7 @@ int main() {
     printf("initializing setpoint...\n");
     // drive 2 rad forward
     setpoint.phi = 2;
+    setpoint.heading = NO_SET_HEADING;
 
     printf("initializing odometry...\n");
     mb_odometry_init(&mb_odometry, 0.0, 0.0, 0.0);
@@ -214,7 +215,6 @@ void balancebot_controller() {
     mb_state.heading = mb_clamp_radians(mb_state.heading);
 
     // Calculate controller outputs
-    setpoint.phi = 0;
     mb_controller_update(&mb_state, &setpoint);
 
     if (!mb_setpoints.manual_ctl) {
@@ -272,13 +272,20 @@ void *printf_loop(void *ptr) {
             printf("\n");
             printf("    θ    |");
             printf("    φ    |");
-            printf("  L Enc  |");
-            printf("  R Enc  |");
-            printf("    X    |");
-            printf("    Y    |");
-            printf("    ψ    |");
-            printf("    θdot |");
-            printf("    φdot |");
+//            printf("  L Enc  |");
+//            printf("  R Enc  |");
+//            printf("    X    |");
+//            printf("    Y    |");
+//            printf("    ψ    |");
+            printf("   θdot  |");
+            printf("   φdot  |");
+            printf("    φr   |");
+            printf("    θr   |");
+            printf(" headingr |");
+            printf("    vl   |");
+            printf("    vr   |");
+            printf("    L    |");
+            printf("    R    |");
 
             printf("\n");
         } else if (new_state == PAUSED && last_state != PAUSED) {
@@ -301,6 +308,7 @@ void *printf_loop(void *ptr) {
             printf("%7.3f  |", mb_state.phiDot);
             printf("%7.3f  |", setpoint.phi);
             printf("%7.3f  |", setpoint.theta);
+            printf("%7.3f  |", setpoint.heading);
             printf("%7.3f  |", mb_state.vL);
             printf("%7.3f  |", mb_state.vR);
             printf("%7.3f  |", mb_state.left_cmd);
