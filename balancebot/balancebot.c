@@ -221,10 +221,10 @@ void balancebot_controller() {
         // send motor commands
         mb_motor_set(LEFT_MOTOR, mb_state.left_cmd);
         mb_motor_set(RIGHT_MOTOR, mb_state.right_cmd);
-    }
-
-    if (mb_setpoints.manual_ctl) {
+    } else if (mb_setpoints.manual_ctl) {
         // send motor commands
+        mb_motor_set(LEFT_MOTOR, 0);
+        mb_motor_set(RIGHT_MOTOR, 0);
     }
 
     // unlock state mutex
@@ -238,17 +238,30 @@ void balancebot_controller() {
  *
  *
  *******************************************************************************/
+ const float MAX_VEL = 5;
 void *setpoint_control_loop(void *ptr) {
 
     while (1) {
 
         // channel 3 controls body velocity (positive goes forward, negative goes backward)
         // channel 4 controls turning (positive goes left, negative goes right)
-        // channel 5 controls mode (0 is manual, 1 is auto)
+        // channel 5 controls mode (0 is manual, 0.5 is simple auto balance, 1 is planner auto?)
         if (rc_dsm_is_new_data()) {
             // TODO: Handle the DSM data from the Spektrum radio reciever
             // You may should implement switching between manual and autonomous
             // mode using channel 5 of the DSM data.
+            const float mode = rc_dsm_ch_normalized(5);
+            if (mode < 0.3) {
+                mb_setpoints.manual_ctl = 1;
+            } else {
+                mb_setpoints.manual_ctl = 0;
+                // enable planner mode?
+                if (mode > 0.7) {
+                }
+            };
+
+            const float vel = rc_dsm_ch_normalized(3);
+            setpoint.phi = vel * MAX_VEL;
         }
         rc_nanosleep(1E9 / RC_CTL_HZ);
     }
