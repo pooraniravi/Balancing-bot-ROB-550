@@ -23,8 +23,6 @@
 // PID controllers
 rc_filter_t thetaController = RC_FILTER_INITIALIZER;
 rc_filter_t phiController = RC_FILTER_INITIALIZER;
-rc_filter_t lController = RC_FILTER_INITIALIZER;
-rc_filter_t rController = RC_FILTER_INITIALIZER;
 rc_filter_t headingController = RC_FILTER_INITIALIZER;
 
 // LQR controller
@@ -64,17 +62,12 @@ int mb_controller_load_config() {
     }
 
     // max theta velocity in rad/s (max spin to allow for turning)
-    double kpTheta, kiTheta, kdTheta, maxThetaVelocity;
-    fscanf(file, "%lf %lf %lf %lf", &kpTheta, &kiTheta, &kdTheta, &maxThetaVelocity);
-    // average of the two wheel diameters?
-    maxThetaVelocity *= PI * WHEEL_DIAMETER;
+    double kpTheta, kiTheta, kdTheta;
+    fscanf(file, "%lf %lf %lf", &kpTheta, &kiTheta, &kdTheta);
 
     double kpPhi, kiPhi, kdPhi, maxTheta;
     fscanf(file, "%lf %lf %lf %lf", &kpPhi, &kiPhi, &kdPhi, &maxTheta);
 
-    kpTheta *= maxThetaVelocity;
-    kiTheta *= maxThetaVelocity;
-    kdTheta *= maxThetaVelocity;
     if (rc_filter_pid(&thetaController, kpTheta, kiTheta, kdTheta, 4 * DT,
                       DT)) {
         fprintf(stderr,
@@ -87,17 +80,7 @@ int mb_controller_load_config() {
         return -1;
     }
 
-    double kp, ki, kd;
-    fscanf(file, "%lf %lf %lf", &kp, &ki, &kd);
-    if (rc_filter_pid(&lController, kp, ki, kd, 4 * DT, DT)) {
-        fprintf(stderr, "ERROR in rc_balance, failed to make left controller\n");
-        return -1;
-    }
-    fscanf(file, "%lf %lf %lf", &kp, &ki, &kd);
-    if (rc_filter_pid(&rController, kp, ki, kd, 4 * DT, DT)) {
-        fprintf(stderr, "ERROR in rc_balance, failed to make right controller\n");
-        return -1;
-    }
+    double kp;
     // just a P controller
     fscanf(file, "%lf", &kp);
     if (rc_filter_pid(&headingController, kp, 0, 0, 4 * DT, DT)) {
@@ -106,10 +89,9 @@ int mb_controller_load_config() {
     }
 
 
-    rc_filter_enable_saturation(&thetaController, -maxThetaVelocity, maxThetaVelocity);
+    rc_filter_enable_saturation(&thetaController, -1, 1);
+    rc_filter_enable_saturation(&headingController, -0.5, 0.5);
     rc_filter_enable_saturation(&phiController, -maxTheta, maxTheta);
-    rc_filter_enable_saturation(&lController, -1, 1);
-    rc_filter_enable_saturation(&rController, -1, 1);
 
     fclose(file);
 
@@ -165,10 +147,9 @@ int mb_controller_update(mb_state_t *mb_state, Setpoint *sp) {
 //    rc_matrix_times_col_vec(K,x,&u);
 //    const double sharedVelocity = u.d[0];
 
-    const double l = rc_filter_march(&lController, sharedVelocity - diffVelocity - mb_state->vL);
-    const double r = rc_filter_march(&rController, sharedVelocity + diffVelocity - mb_state->vR);
-    mb_state->left_cmd = l;
-    mb_state->right_cmd = r;
+    // velocity controller is too slow (need to integrate) to balance
+    mb_state->left_cmd = sharedVelocity - diffVelocity;
+    mb_state->right_cmd = sharedVelocity - diffVelocity;
 
     return 0;
 }
@@ -185,8 +166,6 @@ int mb_controller_update(mb_state_t *mb_state, Setpoint *sp) {
 int mb_controller_cleanup() {
     rc_filter_free(&thetaController);
     rc_filter_free(&phiController);
-    rc_filter_free(&lController);
-    rc_filter_free(&rController);
     rc_filter_free(&headingController);
     rc_matrix_free(&K);
     rc_vector_free(&x);
