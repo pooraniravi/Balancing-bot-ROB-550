@@ -242,6 +242,9 @@ void *setpoint_control_loop(void *ptr) {
 
     while (1) {
 
+        // channel 3 controls body velocity (positive goes forward, negative goes backward)
+        // channel 4 controls turning (positive goes left, negative goes right)
+        // channel 5 controls mode (0 is manual, 1 is auto)
         if (rc_dsm_is_new_data()) {
             // TODO: Handle the DSM data from the Spektrum radio reciever
             // You may should implement switching between manual and autonomous
