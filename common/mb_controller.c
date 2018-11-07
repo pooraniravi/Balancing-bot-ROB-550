@@ -95,6 +95,7 @@ int mb_controller_load_config() {
 
     fclose(file);
 
+
     file = fopen(CFG_PATH, "r");
     if (file == NULL) {
         printf("Error opening %s\n", CFG_PATH);
@@ -121,6 +122,16 @@ int mb_controller_load_config() {
  *
  *******************************************************************************/
 
+double punch(const double ctrl) {
+    const double epsilon = 1e-5;
+    const double punchPWM = 0.05;
+    if (ctrl < -epsilon) {
+        return ctrl - punchPWM;
+    } else if (ctrl > epsilon) {
+        return ctrl + punchPWM;
+    }
+    return ctrl;
+}
 int mb_controller_update(mb_state_t *mb_state, Setpoint *sp) {
     // u = -Kx (configuration file holds negative K already)
 
@@ -128,28 +139,31 @@ int mb_controller_update(mb_state_t *mb_state, Setpoint *sp) {
     // phi controller negated because dphi will be neagtive when theta is positive
     sp->theta =
             rc_filter_march(&phiController, sp->phi - mb_state->phi);
-    if (fabs(sp->theta) < 0.005) {
+    if (fabs(sp->theta) < 0.00000001) {
         sp->theta = 0;
     }
     // linear velocity
     double sharedVelocity =
             rc_filter_march(&thetaController, sp->theta - mb_state->theta);
 
-    // difference in velocity to allow turning
-    double diffVelocity = (sp->heading < NO_SET_HEADING+1) ? 0 : rc_filter_march(&headingController,
-                                                                                      sp->heading - mb_state->heading);
 
     // uncomment below to use LQR controller
 //    x.d[0] = mb_state->theta;
 //    x.d[1] = mb_state->thetaDot;
-//    x.d[2] = mb_state->phi - sp->phi;
+//    x.d[2] = mb_state->theta + mb_state->phi - sp->phi;
 //    x.d[3] = mb_state->phiDot;
-//    rc_matrix_times_col_vec(K,x,&u);
+//    rc_matrix_times_col_vec(K, x, &u);
 //    const double sharedVelocity = u.d[0];
 
+    // steering controller
+    // difference in velocity to allow turning
+    double diffVelocity = (sp->heading < NO_SET_HEADING + 1) ? 0 : rc_filter_march(&headingController,
+                                                                                   sp->heading - mb_state->heading);
+    diffVelocity = 0;
+
     // velocity controller is too slow (need to integrate) to balance
-    mb_state->left_cmd = sharedVelocity - diffVelocity;
-    mb_state->right_cmd = sharedVelocity - diffVelocity;
+    mb_state->left_cmd = punch(sharedVelocity - diffVelocity);
+    mb_state->right_cmd = punch(sharedVelocity - diffVelocity);
 
     return 0;
 }

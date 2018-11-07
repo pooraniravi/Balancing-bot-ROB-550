@@ -18,6 +18,7 @@
 #include <rc/servo.h>
 #include <rc/start_stop.h>
 #include <rc/time.h>
+#include <rc/math/filter.h>
 
 #include "balancebot.h"
 
@@ -26,6 +27,7 @@
 // dHeading from odometry and gyro
 const double GYRODOMETRY_THRESHOLD_RAD = 0.1;
 Setpoint setpoint;
+rc_filter_t thetaDotFilter = RC_FILTER_INITIALIZER;
 
 /*******************************************************************************
  * int main()
@@ -94,6 +96,7 @@ int main() {
     rc_mpu_config_t mpu_config = rc_mpu_default_config();
     mpu_config.dmp_sample_rate = SAMPLE_RATE_HZ;
     mpu_config.orient = ORIENTATION_Z_DOWN;
+    mpu_config.dmp_fetch_accel_gyro=1;
 
     // now set up the imu for dmp interrupt operation
     if (rc_mpu_initialize_dmp(&mpu_data, mpu_config)) {
@@ -121,6 +124,7 @@ int main() {
     }
 
     printf("resetting encoders...\n");
+    rc_filter_butterworth_lowpass(&thetaDotFilter, 2, DT, 50*2*PI);
     rc_encoder_eqep_write(1, 0);
     rc_encoder_eqep_write(2, 0);
 
@@ -131,8 +135,8 @@ int main() {
 
     printf("initializing setpoint...\n");
     // drive 2 rad forward
-    setpoint.phi = 2;
-    setpoint.heading = NO_SET_HEADING;
+    setpoint.phi = 0;
+    setpoint.heading = 0;
 
     printf("initializing odometry...\n");
     mb_odometry_init(&mb_odometry, 0.0, 0.0, 0.0);
@@ -165,7 +169,6 @@ int main() {
     rc_remove_pid_file(); // remove pid file LAST
     return 0;
 }
-
 /*******************************************************************************
  * void balancebot_controller()
  *
@@ -192,7 +195,8 @@ void balancebot_controller() {
 
     mb_state.t = t;
     mb_state.dt = dt;
-    mb_state.thetaDot = (theta - mb_state.theta) / dt;
+//    mb_state.thetaDot = (theta - mb_state.theta) / dt;
+    mb_state.thetaDot = rc_filter_march(&thetaDotFilter, mpu_data.gyro[0] * DEG_TO_RAD);
     mb_state.theta = theta;
     // Read encoders
     mb_state.left_encoder = rc_encoder_eqep_read(LEFT_MOTOR);
@@ -329,7 +333,7 @@ void *printf_loop(void *ptr) {
             printf("%7.3f  |", mb_state.vR);
             printf("%7.3f  |", mb_state.left_cmd);
             printf("%7.3f  |", mb_state.right_cmd);
-            printf("\n");
+            printf("\r");
             pthread_mutex_unlock(&state_mutex);
             fflush(stdout);
         }
