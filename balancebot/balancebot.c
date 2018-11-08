@@ -45,6 +45,7 @@ int err_counter = 0;
 const char headByte = 0x1B;
 const char tailByte = 0xFF;
 int fd;
+int dataCount = 0;
 
 void getData(balancebot_msg_t *BBmsg) {
     char *ptr;
@@ -78,6 +79,7 @@ void getData(balancebot_msg_t *BBmsg) {
             ptr = dataPacket;
         }
     }
+    ++dataCount;
 }
 
 void printData(balancebot_msg_t BBmsg) {
@@ -110,6 +112,8 @@ void printData(balancebot_msg_t BBmsg) {
     last_utime = BBmsg.utime;
 }
 
+//construct message for storage
+balancebot_msg_t BBmsg;
 void *motion_capture_receive_message_loop(void *ptr) {
     //open serial port non-blocking
     fd = serial_open(port, baudRate, 0);
@@ -119,8 +123,6 @@ void *motion_capture_receive_message_loop(void *ptr) {
         return NULL;
     }
 
-    //construct message for storage
-    balancebot_msg_t BBmsg;
     pose_xyt_t BBpose;
     balancebot_gate_t BBgates[num_gates];
     BBmsg.pose = BBpose;
@@ -150,15 +152,6 @@ void *motion_capture_receive_message_loop(void *ptr) {
         //printf("bytes: %d\n",bytes_avail);
         if (bytes_avail >= packetLength) {
             getData(&BBmsg);
-            //printData(BBmsg);
-            printf("%+7.6f|", BBmsg.pose.x);
-            printf("%+7.6f|", BBmsg.pose.y);
-            printf("%+7.6f|", BBmsg.pose.theta);
-            printf("  %d   |", BBmsg.num_gates);
-            if (BBmsg.num_gates > 0) {
-                printf("%+7.6f|", (BBmsg.gates[0].left_post[0] + BBmsg.gates[0].right_post[0]) / 2.0);
-                printf("%+7.6f|", (BBmsg.gates[0].left_post[1] + BBmsg.gates[0].right_post[1]) / 2.0);
-            }
         }
         rc_nanosleep(100E3);
     }
@@ -227,9 +220,9 @@ int main() {
 
     // TODO: start motion capture message recieve thread
     printf("starting motion capture message receive thread... \n");
-    pthread_t motion_capture_receive_message_thread;
-    rc_pthread_create(&motion_capture_receive_message_thread, motion_capture_receive_message_loop,
-                      (void *) NULL, SCHED_FIFO, 50);
+//    pthread_t motion_capture_receive_message_thread;
+//    rc_pthread_create(&motion_capture_receive_message_thread, motion_capture_receive_message_loop,
+//                      (void *) NULL, SCHED_FIFO, 50);
 
     // set up IMU configuration
     printf("initializing imu... \n");
@@ -444,6 +437,7 @@ void *printf_loop(void *ptr) {
             printf("\n");
             printf("    θ    |");
             printf("    φ    |");
+            printf(" heading  |");
 //            printf("  L Enc  |");
 //            printf("  R Enc  |");
 //            printf("    X    |");
@@ -475,7 +469,7 @@ void *printf_loop(void *ptr) {
 //            printf("%7d  |", mb_state.right_encoder);
 //            printf("%7.3f  |", mb_odometry.x);
 //            printf("%7.3f  |", mb_odometry.y);
-//            printf("%7.3f  |", mb_state.heading);
+            printf("%7.3f  |", mb_state.heading);
             printf("%7.3f  |", mb_state.thetaDot);
             printf("%7.3f  |", mb_state.phiDot);
             printf("%7.3f  |", setpoint.phi);
@@ -485,6 +479,16 @@ void *printf_loop(void *ptr) {
             printf("%7.3f  |", mb_state.vR);
             printf("%7.3f  |", mb_state.left_cmd);
             printf("%7.3f  |", mb_state.right_cmd);
+//            printf("%7d  |", dataCount);
+            //printData(BBmsg);
+//            printf("%+7.6f|", BBmsg.pose.x);
+//            printf("%+7.6f|", BBmsg.pose.y);
+//            printf("%+7.6f|", BBmsg.pose.theta);
+//            printf("  %d   |", BBmsg.num_gates);
+//            if (BBmsg.num_gates > 0) {
+//                printf("%+7.6f|", (BBmsg.gates[0].left_post[0] + BBmsg.gates[0].right_post[0]) / 2.0);
+//                printf("%+7.6f|", (BBmsg.gates[0].left_post[1] + BBmsg.gates[0].right_post[1]) / 2.0);
+//            }
             printf("\r");
             pthread_mutex_unlock(&state_mutex);
             fflush(stdout);
