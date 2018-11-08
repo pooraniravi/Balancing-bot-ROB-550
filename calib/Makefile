@@ -1,32 +1,30 @@
 # this target will be compiled
-TARGET = ../bin/balancebot
+TARGET = ../bin/calib
 
-CC			:= gcc
+CC		    := gcc
 LINKER		:= gcc -o
-CFLAGS		:= -c -Wall -g `pkg-config --cflags lcm`
-LFLAGS		:= -lm -lrt -lpthread -l:librobotcontrol.so.1 -L `pkg-config --libs lcm`
+CFLAGS		:= -c -Wall -g
+LFLAGS		:= -lm -lrt -lpthread -l:librobotcontrol.so.1
 
 SOURCES		:= $(wildcard *.c)
-SOURCES		:= $(SOURCES) $(wildcard ../common/*.c) $(wildcard ../optitrack/common/*.c)
+SOURCES		:= $(SOURCES) $(wildcard ../common/*.c)
 INCLUDES	:= $(wildcard *.h)
-INCLUDES	:= $(INCLUDES) $(wildcard ../common/*.h) $(wildcard ../optitrack/common/*.h)
+INCLUDES	:= $(INCLUDES) $(wildcard ../common/*.h)
 OBJECTS		:= $(SOURCES:$%.c=$%.o)
-LCMTYPES    := $(shell find ../lcmtypes/ -name '*.lcm')                        
-LCMOBJS     := $(LCMTYPES:$%.lcm=$%.o) 
 
 prefix		:= /usr/local
-RM			:= rm -f
+RM		    := rm -f
 INSTALL		:= install -m 4755
 INSTALLDIR	:= install -d -m 755 
 
 LINK		:= ln -s -f
-LINKDIR		:= /etc/roboticscape
+LINKDIR	    := /etc/librobotcontrol
 LINKNAME	:= link_to_startup_program
 
 
 # linking Objects
 $(TARGET): $(OBJECTS)
-	@$(LINKER) $@ $(OBJECTS) $(LCMOBJS) $(LFLAGS)
+	@$(LINKER) $@ $(OBJECTS) $(LFLAGS)
 
 
 # compiling command
@@ -51,7 +49,8 @@ install:
 
 clean:
 	@$(RM) $(OBJECTS)
-	@$(RM) $(LCMOBJS)
+	@$(RM) $(IGNORE)
+	@$(RM) $(IGNORE:=.o)
 	@$(RM) $(TARGET)
 	@echo "$(TARGET) Clean Complete"
 

@@ -7,6 +7,10 @@ struct mb_state{
     int     left_encoder;      // left encoder counts since last reading
     int     right_encoder;     // right encoder counts since last reading
 
+    // incremental velocity
+    double vL;
+    double vR;
+
     // LQR controller relevant state
     double   theta;             // body angle (rad)
     double   thetaDot;
@@ -36,6 +40,15 @@ struct mb_setpoints{
     float turn_velocity; // turn velocity in rad/s
     int manual_ctl;
 };
+
+typedef struct {
+    // for now just a phi; consider attaching x,y,heading to here
+    double phi;
+    double theta;
+    double heading;
+} Setpoint;
+
+#define NO_SET_HEADING -999
 
 typedef struct mb_odometry mb_odometry_t;
 struct mb_odometry{

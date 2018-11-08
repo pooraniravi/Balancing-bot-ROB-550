@@ -18,10 +18,15 @@ const double TICKS_TO_M_L = ENCODER_TICKS_TO_ROT * PI * WHEEL_DIAMETER;
 const double TICKS_TO_M_R = ENCODER_TICKS_TO_ROT * PI * WHEEL_DIAMETER;
 const double TICKS_TO_RAD = ENCODER_TICKS_TO_ROT * 2 * PI;
 
+// filters
+rc_filter_t phiDotFilter = RC_FILTER_INITIALIZER;
+
 void mb_odometry_init(mb_odometry_t* mb_odometry, float x, float y, float theta){
     mb_odometry->x = x;
     mb_odometry->y = y;
     mb_odometry->dHeading = theta;
+
+    rc_filter_butterworth_lowpass(&phiDotFilter, 4, DT, 25*2*PI);
 }
 
 double now(void) {
@@ -31,8 +36,8 @@ double now(void) {
 }
 
 void mb_odometry_update(mb_odometry_t* mb_odometry, mb_state_t* mb_state, double dt){
-    const int dL = mb_state->left_encoder * MOT_2_POL;
-    const int dR = mb_state->right_encoder * MOT_1_POL;
+    const int dL = mb_state->left_encoder * ENC_2_POL;
+    const int dR = mb_state->right_encoder * ENC_1_POL;
 
     // Differential drive odometry with dHeading in [-pi, pi]
     // displacements
@@ -52,8 +57,10 @@ void mb_odometry_update(mb_odometry_t* mb_odometry, mb_state_t* mb_state, double
     const double dy = d * sin(mb_state->heading + mb_odometry->dHeading/2);
 
     // apply update to odometry and state
-    mb_state->phiDot = dphi / dt;
+    mb_state->phiDot = rc_filter_march(&phiDotFilter, dphi / dt);
     mb_state->phi += dphi;
+    mb_state->vL = dSL / dt;
+    mb_state->vR = dSR / dt;
 
     mb_odometry->x += dx;
     mb_odometry->y += dy;
@@ -69,6 +76,7 @@ float mb_clamp_radians(float angle){
     }
     return angle;
 }
+
 
 void resetEncoders() {
     rc_encoder_eqep_write(1, 0);
