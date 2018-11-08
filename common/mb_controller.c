@@ -1,5 +1,6 @@
 #include "mb_controller.h"
 #include "mb_defs.h"
+#include "mb_odometry.h"
 #include <math.h>
 #include <rc/math.h>
 #include <rc/math/filter.h>
@@ -132,6 +133,7 @@ double punch(const double ctrl) {
     }
     return ctrl;
 }
+
 int mb_controller_update(mb_state_t *mb_state, Setpoint *sp) {
     // u = -Kx (configuration file holds negative K already)
 
@@ -157,13 +159,11 @@ int mb_controller_update(mb_state_t *mb_state, Setpoint *sp) {
 
     // steering controller
     // difference in velocity to allow turning
-    double diffVelocity = (sp->heading < NO_SET_HEADING + 1) ? 0 : rc_filter_march(&headingController,
-                                                                                   sp->heading - mb_state->heading);
-    diffVelocity = 0;
+    double diffVelocity = rc_filter_march(&headingController, mb_clamp_radians(sp->heading - mb_state->heading));
 
     // velocity controller is too slow (need to integrate) to balance
     mb_state->left_cmd = punch(sharedVelocity - diffVelocity);
-    mb_state->right_cmd = punch(sharedVelocity - diffVelocity);
+    mb_state->right_cmd = punch(sharedVelocity + diffVelocity);
 
     return 0;
 }
