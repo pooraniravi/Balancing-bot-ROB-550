@@ -384,8 +384,8 @@ void balancebot_controller() {
  *
  *
  *******************************************************************************/
-const float MAX_VEL = 5;
-
+ const float MAX_VEL = 1;   // in radians
+ const float MAX_HEADING_VEL = 0.3; // in radians
 void *setpoint_control_loop(void *ptr) {
 
     while (1) {
@@ -394,7 +394,6 @@ void *setpoint_control_loop(void *ptr) {
         // channel 4 controls turning (positive goes left, negative goes right)
         // channel 5 controls mode (0 is manual, 0.5 is simple auto balance, 1 is planner auto?)
         if (rc_dsm_is_new_data()) {
-            // TODO: Handle the DSM data from the Spektrum radio reciever
             // You may should implement switching between manual and autonomous
             // mode using channel 5 of the DSM data.
             const float mode = rc_dsm_ch_normalized(5);
@@ -407,8 +406,18 @@ void *setpoint_control_loop(void *ptr) {
                 }
             };
 
-            const float vel = rc_dsm_ch_normalized(3);
-            setpoint.phi = vel * MAX_VEL;
+            float vel = rc_dsm_ch_normalized(3);
+            float heading = rc_dsm_ch_normalized(4);
+            // use small dead zone to prevent slow drifts
+            if (fabs(vel) < DSM_DEAD_ZONE) {
+                vel = 0;
+            }
+            if (fabs(heading) < DSM_DEAD_ZONE) {
+                heading = 0;
+            }
+
+            setpoint.phi = mb_state.phi + vel * MAX_VEL;
+            setpoint.heading = mb_state.heading + heading * MAX_HEADING_VEL;
         }
         rc_nanosleep(1E9 / RC_CTL_HZ);
     }
