@@ -77,10 +77,6 @@ float mb_clamp_radians(float angle){
     return angle;
 }
 
-double angularDiff(double a, double b) {
-//    double diff = b - a;
-//    diff = (diff + PI)
-}
 
 void resetEncoders() {
     rc_encoder_eqep_write(1, 0);
