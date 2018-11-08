@@ -25,7 +25,8 @@ common/mb_odometry.c/.h	     : Odometry functions
 3. (on computer) `python -m --user pip install watchdog`
 4. download script to computer: https://gist.github.com/LemonPi/49e749489a46186665ea4a5e5e0819c1
 5. run script passing in path to directory to sync `python watch_sync.py ubalance/`
-
+    - if you are connecting via wifi, use `python watch_sync.py ubalance/ -w`
+    - note that this should be run when you're cd'ed to `~/Documents`
 ## Determining motor parameters
 - in steady state V = Ri + Kw
     - start measuring after spinning for 2s to ensure steady state
