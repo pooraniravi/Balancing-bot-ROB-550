@@ -377,8 +377,9 @@ void balancebot_controller() {
  *
  *
  *******************************************************************************/
- const float MAX_VEL = 1;   // in radians
+ const float MAX_VEL = 0.4;   // in radians
  const float MAX_HEADING_VEL = 0.3; // in radians
+ const float DSM_DEAD_ZONE = 0.01;
 void *setpoint_control_loop(void *ptr) {
 
     while (1) {
@@ -402,15 +403,16 @@ void *setpoint_control_loop(void *ptr) {
             float vel = rc_dsm_ch_normalized(3);
             float heading = rc_dsm_ch_normalized(4);
             // use small dead zone to prevent slow drifts
-            if (fabs(vel) < DSM_DEAD_ZONE) {
-                vel = 0;
+            pthread_mutex_lock(&state_mutex);
+            pthread_mutex_lock(&setpoint_mutex);
+            if (fabs(vel) > DSM_DEAD_ZONE) {
+                setpoint.phi = mb_state.phi + vel * MAX_VEL;
             }
-            if (fabs(heading) < DSM_DEAD_ZONE) {
-                heading = 0;
+            if (fabs(heading) > DSM_DEAD_ZONE) {
+                setpoint.heading =  mb_state.heading + heading * MAX_HEADING_VEL;
             }
-
-            setpoint.phi = mb_state.phi + vel * MAX_VEL;
-            setpoint.heading = mb_state.heading + heading * MAX_HEADING_VEL;
+            pthread_mutex_unlock(&state_mutex);
+            pthread_mutex_unlock(&setpoint_mutex);
         }
         rc_nanosleep(1E9 / RC_CTL_HZ);
     }
