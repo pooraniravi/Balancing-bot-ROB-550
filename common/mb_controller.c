@@ -67,8 +67,8 @@ int mb_controller_load_config() {
     double kpTheta, kiTheta, kdTheta;
     fscanf(file, "%lf %lf %lf", &kpTheta, &kiTheta, &kdTheta);
 
-    double kpPhi, kiPhi, kdPhi, maxTheta;
-    fscanf(file, "%lf %lf %lf %lf", &kpPhi, &kiPhi, &kdPhi, &maxTheta);
+    double kpPhi, kiPhi, kdPhi, maxTheta, riseTime;
+    fscanf(file, "%lf %lf %lf %lf %lf", &kpPhi, &kiPhi, &kdPhi, &maxTheta, &riseTime);
 
     if (rc_filter_pid(&thetaController, kpTheta, kiTheta, kdTheta, 0.0278,
                       DT)) {
@@ -77,7 +77,7 @@ int mb_controller_load_config() {
         return -1;
     }
 
-    if (rc_filter_pid(&phiController, kpPhi, kiPhi, kdPhi, 0.1944, DT)) {
+    if (rc_filter_pid(&phiController, kpPhi, kiPhi, kdPhi, riseTime, DT)) {
         fprintf(stderr, "ERROR in rc_balance, failed to make phi controller\n");
         return -1;
     }

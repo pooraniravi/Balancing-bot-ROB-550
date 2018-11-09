@@ -380,7 +380,8 @@ void balancebot_controller() {
  *******************************************************************************/
 const float MAX_HEADING_VEL = 0.3; // in radians
 double lastCommandTime = 0;
-const double minTimeBetweenCommands = 1;
+const double minTimeBetweenCommands = 0.0;
+const double DSM_DEAD_ZONE = 0.01;
 
 void *setpoint_control_loop(void *ptr) {
 
@@ -408,7 +409,8 @@ void *setpoint_control_loop(void *ptr) {
             if (fabs(vel) > DSM_DEAD_ZONE) {
                 const double commandTime = now();
                 if (commandTime - lastCommandTime > minTimeBetweenCommands) {
-                    setpoint.phi = mb_state.phi + vel * maxPhiControlStep;
+                    //setpoint.phi = vel * maxPhiControlStep;
+                    setpoint.phi+= vel * maxPhiControlStep;
                     lastCommandTime = commandTime;
                 }
             }
