@@ -5,6 +5,8 @@
 #define CFG_PATH "lqr.cfg"
 #define PID_PATH "pid.cfg"
 
+double maxPhiControlStep;
+
 int mb_controller_init();
 int mb_controller_load_config();
 int mb_controller_update(mb_state_t* mb_state, Setpoint* sp);

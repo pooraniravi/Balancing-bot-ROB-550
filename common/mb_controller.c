@@ -31,6 +31,7 @@ rc_matrix_t K = RC_MATRIX_INITIALIZER;
 rc_vector_t x = RC_VECTOR_INITIALIZER;
 rc_vector_t u = RC_VECTOR_INITIALIZER;
 
+double maxPhiControlStep;
 
 int mb_controller_init() {
     rc_matrix_zeros(&K, 1, 4);
@@ -83,7 +84,7 @@ int mb_controller_load_config() {
 
     double kp;
     // just a P controller
-    fscanf(file, "%lf", &kp);
+    fscanf(file, "%lf %lf", &kp, &maxPhiControlStep);
     if (rc_filter_pid(&headingController, kp, 0, 0, 4 * DT, DT)) {
         fprintf(stderr, "ERROR in rc_balance, failed to make heading controller\n");
         return -1;
