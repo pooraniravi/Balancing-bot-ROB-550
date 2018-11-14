@@ -19,6 +19,7 @@
 #include <rc/start_stop.h>
 #include <rc/time.h>
 #include <rc/math/filter.h>
+#include <math.h>
 
 #include "balancebot.h"
 
@@ -158,6 +159,17 @@ void *motion_capture_receive_message_loop(void *ptr) {
     }
     serial_close(fd);
     return NULL;
+}
+
+// planner variables
+const int NUM_TARGETS = 10;
+Target targets[NUM_TARGETS] = {};
+int numTarget = 0;
+int currentTargetIndex = 0;
+
+void addTarget(Target t) {
+    targets[numTarget] = t;
+    ++numTarget;
 }
 
 /*******************************************************************************
@@ -383,6 +395,7 @@ double lastCommandTime = 0;
 const double minTimeBetweenCommands = 0.0;
 const double DSM_DEAD_ZONE = 0.01;
 
+
 void *setpoint_control_loop(void *ptr) {
 
     while (1) {
@@ -419,6 +432,24 @@ void *setpoint_control_loop(void *ptr) {
             }
 
             setpoint.heading = mb_state.heading + heading * MAX_HEADING_VEL;
+        } else if (currentTargetIndex < numTarget) {
+            // else check if our planner has any setpoints
+            const Target* currentTarget = &targets[currentTargetIndex];
+            bool reachedTarget = false;
+            // only matters for translation targets
+            const double dx = currentTarget->x - mb_odometry.x;
+            const double dy = currentTarget->y - mb_odometry.y;
+            // distance to radians the wheel has to travel
+            const double dphi = sqrt(dx*dx + dy*dy) * 2 / WHEEL_DIAMETER;
+            // only matters for rotation targets
+            const double dheading = currentTarget->heading - mb_state.heading;
+            // check if we've reached our target
+            if (reachedTarget) {
+                // go for next target in the next loop
+                ++currentTargetIndex;
+            } else {
+                // set setpoint such that we get closer to target
+            }
         }
         rc_nanosleep(1E9 / RC_CTL_HZ);
     }
