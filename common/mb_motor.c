@@ -259,5 +259,5 @@ double mb_motor_read_current(int motor) {
     }
 
     //DRV8801 driver board CS pin puts out 500mV/A
-    return v * 0.500;
+    return v / 0.500;
 }
