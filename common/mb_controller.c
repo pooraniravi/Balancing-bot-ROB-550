@@ -65,10 +65,10 @@ int mb_controller_load_config() {
 
     // max theta velocity in rad/s (max spin to allow for turning)
     double kpTheta, kiTheta, kdTheta;
-    fscanf(file, "%lf %lf %lf", &kpTheta, &kiTheta, &kdTheta);
-
     double kpPhi, kiPhi, kdPhi, maxTheta, riseTime;
-    fscanf(file, "%lf %lf %lf %lf %lf", &kpPhi, &kiPhi, &kdPhi, &maxTheta, &riseTime);
+
+    fscanf(file, "%lf %lf %lf %lf", &kpTheta, &kiTheta, &kdTheta, &riseTime);
+
 
     if (rc_filter_pid(&thetaController, kpTheta, kiTheta, kdTheta, 0.0278,
                       DT)) {
@@ -76,6 +76,8 @@ int mb_controller_load_config() {
                 "ERROR in rc_balance, failed to make theta controller\n");
         return -1;
     }
+
+    fscanf(file, "%lf %lf %lf %lf %lf", &kpPhi, &kiPhi, &kdPhi, &maxTheta, &riseTime);
 
     if (rc_filter_pid(&phiController, kpPhi, kiPhi, kdPhi, riseTime, DT)) {
         fprintf(stderr, "ERROR in rc_balance, failed to make phi controller\n");
