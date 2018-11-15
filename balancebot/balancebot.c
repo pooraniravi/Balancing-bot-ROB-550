@@ -284,11 +284,18 @@ int main() {
     setpoint.heading = 0;
 
     printf("initializing targets...\n");
-    Target t;
-    t.type = ROTATE;
-    t.duration = 5;
-    t.heading = PI/2;
-    addTarget(t);
+    FILE *file = fopen(PID_PATH, "r");
+    if (file != NULL) {
+        int n = 0;
+        fscanf(file, "%d", &n);
+        Target t;
+        int type;
+        for (int i = 0; i < n; ++i) {
+            fscanf(file, "%d %lf %lf %lf %lf", &type, &t.x, &t.y, &t.heading, &t.duration);
+            t.type = (enum TargetType)type;
+            addTarget(t);
+        }
+    }
 
     printf("initializing odometry...\n");
     mb_odometry_init(&mb_odometry, 0.0, 0.0, 0.0);

@@ -4,6 +4,7 @@
 #include "mb_structs.h"
 #define CFG_PATH "lqr.cfg"
 #define PID_PATH "pid.cfg"
+#define TARGET_PATH "targets.cfg"
 
 double maxPhiControlStep;
 
