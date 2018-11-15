@@ -162,8 +162,7 @@ void *motion_capture_receive_message_loop(void *ptr) {
 }
 
 // planner variables
-const int NUM_TARGETS = 10;
-Target targets[NUM_TARGETS] = {};
+Target targets[10];
 int numTarget = 0;
 int currentTargetIndex = 0;
 
@@ -456,7 +455,7 @@ void *setpoint_control_loop(void *ptr) {
 
             // else check if our planner has any setpoints
             const Target* currentTarget = &targets[currentTargetIndex];
-            bool reachedTarget = false;
+            int reachedTarget = 0;
             // only matters for translation targets
             const double dx = currentTarget->x - mb_odometry.x;
             const double dy = currentTarget->y - mb_odometry.y;
@@ -464,9 +463,9 @@ void *setpoint_control_loop(void *ptr) {
             const double dphi = sqrt(dx*dx + dy*dy) * 2 / WHEEL_DIAMETER;
             // only matters for rotation targets
             const double dheading = currentTarget->heading - mb_state.heading;
-            if (currentTarget->type == TRANSLATE && fabs(dphi) < PHI_TOLERANCE ||
-            currentTarget->type == ROTATE && fabs(dheading) < HEADING_TOLERANCE) {
-                reachedTarget = true;
+            if ((currentTarget->type == TRANSLATE && fabs(dphi) < PHI_TOLERANCE) ||
+                    (currentTarget->type == ROTATE && fabs(dheading) < HEADING_TOLERANCE)) {
+                reachedTarget = 1;
             }
             // check if we've reached our target
             if (reachedTarget) {
@@ -485,7 +484,7 @@ void *setpoint_control_loop(void *ptr) {
                     initialHeading = mb_state.heading;
                 }
             } else {
-                const double percentAlongPath = mb_in_range((now() - startTargetTime)/currentTarget->duration, 0, 1);
+                const double percentAlongPath = clamp((now() - startTargetTime)/currentTarget->duration, 0, 1);
                 // set setpoint such that we get closer to target
                 if (currentTarget->type == TRANSLATE) {
 

@@ -54,7 +54,7 @@ typedef struct {
     double x;
     double y;
     double heading;
-    TargetType type;
+    enum TargetType type;
     double duration;
 } Target;
 

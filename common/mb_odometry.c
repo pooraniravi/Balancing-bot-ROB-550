@@ -77,6 +77,15 @@ float mb_clamp_radians(float angle){
     return angle;
 }
 
+double clamp(double num, double min, double max) {
+    if (num < min) {
+        return min;
+    }
+    if (num > max) {
+        return max;
+    }
+    return num;
+}
 
 void resetEncoders() {
     rc_encoder_eqep_write(1, 0);
