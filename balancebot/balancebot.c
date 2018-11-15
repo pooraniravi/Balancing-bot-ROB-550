@@ -395,6 +395,9 @@ double lastCommandTime = 0;
 const double minTimeBetweenCommands = 0.0;
 const double DSM_DEAD_ZONE = 0.01;
 
+const double PHI_TOLERANCE = 0.2;
+const double HEADING_TOLERANCE = 0.05;
+
 
 void *setpoint_control_loop(void *ptr) {
 
@@ -443,6 +446,10 @@ void *setpoint_control_loop(void *ptr) {
             const double dphi = sqrt(dx*dx + dy*dy) * 2 / WHEEL_DIAMETER;
             // only matters for rotation targets
             const double dheading = currentTarget->heading - mb_state.heading;
+            if (currentTarget->type == TRANSLATE && fabs(dphi) < PHI_TOLERANCE ||
+            currentTarget->type == ROTATE && fabs(dheading) < HEADING_TOLERANCE) {
+                reachedTarget = true;
+            }
             // check if we've reached our target
             if (reachedTarget) {
                 // go for next target in the next loop
