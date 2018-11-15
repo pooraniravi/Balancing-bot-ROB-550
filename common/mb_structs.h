@@ -55,6 +55,7 @@ typedef struct {
     double y;
     double heading;
     TargetType type;
+    double duration;
 } Target;
 
 #define NO_SET_HEADING -999

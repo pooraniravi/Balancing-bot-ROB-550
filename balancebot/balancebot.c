@@ -398,6 +398,14 @@ const double DSM_DEAD_ZONE = 0.01;
 const double PHI_TOLERANCE = 0.2;
 const double HEADING_TOLERANCE = 0.05;
 
+const double HEADING_P = 0.5;
+const double HEADING_MAX = 0.8;
+
+const double PHI_P = 0.5;
+const double PHI_MAX = 0.2;
+double startTargetTime = 0;
+double initialDeltaPhi = 0;
+double initialHeading = 0;
 
 void *setpoint_control_loop(void *ptr) {
 
@@ -436,6 +444,11 @@ void *setpoint_control_loop(void *ptr) {
 
             setpoint.heading = mb_state.heading + heading * MAX_HEADING_VEL;
         } else if (currentTargetIndex < numTarget) {
+            // initialization
+            if (startTargetTime == 0) {
+                startTargetTime = now();
+            }
+
             // else check if our planner has any setpoints
             const Target* currentTarget = &targets[currentTargetIndex];
             bool reachedTarget = false;
@@ -454,8 +467,33 @@ void *setpoint_control_loop(void *ptr) {
             if (reachedTarget) {
                 // go for next target in the next loop
                 ++currentTargetIndex;
+                // clear phi so that for each target we start at phi = 0
+                mb_state.phi = 0;
+                startTargetTime = now();
+                if (currentTargetIndex < numTarget) {
+                    // figure out how far we actually need to go
+                    const Target* nextTarget = &targets[currentTargetIndex];
+                    const double dx = nextTarget->x - mb_odometry.x;
+                    const double dy = nextTarget->y - mb_odometry.y;
+                    // distance to radians the wheel has to travel
+                    initialDeltaPhi = sqrt(dx*dx + dy*dy) * 2 / WHEEL_DIAMETER;
+                    initialHeading = mb_state.heading;
+                }
             } else {
+                const double percentAlongPath = mb_in_range((now() - startTargetTime)/currentTarget->duration, 0, 1);
                 // set setpoint such that we get closer to target
+                if (currentTarget->type == TRANSLATE) {
+
+                    setpoint.phi = percentAlongPath * initialDeltaPhi;
+                    // heading needs to face towards target
+                    const double headingToTarget = atan2(dy, dx);
+                    setpoint.heading = headingToTarget;
+                } else {
+                    // don't move anywhere
+                    setpoint.phi = 0;
+                    // blend the initial heading and the desired heading
+                    setpoint.heading = percentAlongPath * currentTarget->heading + (1-percentAlongPath) * initialHeading;
+                }
             }
         }
         rc_nanosleep(1E9 / RC_CTL_HZ);
