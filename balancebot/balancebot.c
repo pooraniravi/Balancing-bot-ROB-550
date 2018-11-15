@@ -281,9 +281,15 @@ int main() {
     mb_state.heading = 0;
 
     printf("initializing setpoint...\n");
-    // drive 2 rad forward
     setpoint.phi = 0;
     setpoint.heading = 0;
+
+    printf("initializing targets...\n");
+    Target t;
+    t.type = ROTATE;
+    t.duration = 5;
+    t.heading = PI/2;
+    addTarget(t);
 
     printf("initializing odometry...\n");
     mb_odometry_init(&mb_odometry, 0.0, 0.0, 0.0);
