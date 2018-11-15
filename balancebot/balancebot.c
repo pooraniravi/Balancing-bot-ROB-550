@@ -19,6 +19,7 @@
 #include <rc/start_stop.h>
 #include <rc/time.h>
 #include <rc/math/filter.h>
+#include <math.h>
 
 #include "balancebot.h"
 
@@ -114,6 +115,7 @@ void printData(balancebot_msg_t BBmsg) {
 
 //construct message for storage
 balancebot_msg_t BBmsg;
+
 void *motion_capture_receive_message_loop(void *ptr) {
     //open serial port non-blocking
     fd = serial_open(port, baudRate, 0);
@@ -157,6 +159,17 @@ void *motion_capture_receive_message_loop(void *ptr) {
     }
     serial_close(fd);
     return NULL;
+}
+
+// planner variables
+const int NUM_TARGETS = 10;
+Target targets[NUM_TARGETS] = {};
+int numTarget = 0;
+int currentTargetIndex = 0;
+
+void addTarget(Target t) {
+    targets[numTarget] = t;
+    ++numTarget;
 }
 
 /*******************************************************************************
@@ -268,9 +281,15 @@ int main() {
     mb_state.heading = 0;
 
     printf("initializing setpoint...\n");
-    // drive 2 rad forward
     setpoint.phi = 0;
     setpoint.heading = 0;
+
+    printf("initializing targets...\n");
+    Target t;
+    t.type = ROTATE;
+    t.duration = 5;
+    t.heading = PI/2;
+    addTarget(t);
 
     printf("initializing odometry...\n");
     mb_odometry_init(&mb_odometry, 0.0, 0.0, 0.0);
@@ -377,9 +396,23 @@ void balancebot_controller() {
  *
  *
  *******************************************************************************/
- const float MAX_VEL = 0.4;   // in radians
- const float MAX_HEADING_VEL = 0.3; // in radians
- const float DSM_DEAD_ZONE = 0.01;
+const float MAX_HEADING_VEL = 0.3; // in radians
+double lastCommandTime = 0;
+const double minTimeBetweenCommands = 0.0;
+const double DSM_DEAD_ZONE = 0.01;
+
+const double PHI_TOLERANCE = 0.2;
+const double HEADING_TOLERANCE = 0.05;
+
+const double HEADING_P = 0.5;
+const double HEADING_MAX = 0.8;
+
+const double PHI_P = 0.5;
+const double PHI_MAX = 0.2;
+double startTargetTime = 0;
+double initialDeltaPhi = 0;
+double initialHeading = 0;
+
 void *setpoint_control_loop(void *ptr) {
 
     while (1) {
@@ -403,16 +436,70 @@ void *setpoint_control_loop(void *ptr) {
             float vel = rc_dsm_ch_normalized(3);
             float heading = rc_dsm_ch_normalized(4);
             // use small dead zone to prevent slow drifts
-            pthread_mutex_lock(&state_mutex);
-            pthread_mutex_lock(&setpoint_mutex);
             if (fabs(vel) > DSM_DEAD_ZONE) {
-                setpoint.phi = mb_state.phi + vel * MAX_VEL;
+                const double commandTime = now();
+                if (commandTime - lastCommandTime > minTimeBetweenCommands) {
+                    //setpoint.phi = vel * maxPhiControlStep;
+                    setpoint.phi+= vel * maxPhiControlStep;
+                    lastCommandTime = commandTime;
+                }
             }
             if (fabs(heading) > DSM_DEAD_ZONE) {
                 setpoint.heading =  mb_state.heading + heading * MAX_HEADING_VEL;
             }
-            pthread_mutex_unlock(&state_mutex);
-            pthread_mutex_unlock(&setpoint_mutex);
+            setpoint.heading = mb_state.heading + heading * MAX_HEADING_VEL;
+        } else if (currentTargetIndex < numTarget) {
+            // initialization
+            if (startTargetTime == 0) {
+                startTargetTime = now();
+            }
+
+            // else check if our planner has any setpoints
+            const Target* currentTarget = &targets[currentTargetIndex];
+            bool reachedTarget = false;
+            // only matters for translation targets
+            const double dx = currentTarget->x - mb_odometry.x;
+            const double dy = currentTarget->y - mb_odometry.y;
+            // distance to radians the wheel has to travel
+            const double dphi = sqrt(dx*dx + dy*dy) * 2 / WHEEL_DIAMETER;
+            // only matters for rotation targets
+            const double dheading = currentTarget->heading - mb_state.heading;
+            if (currentTarget->type == TRANSLATE && fabs(dphi) < PHI_TOLERANCE ||
+            currentTarget->type == ROTATE && fabs(dheading) < HEADING_TOLERANCE) {
+                reachedTarget = true;
+            }
+            // check if we've reached our target
+            if (reachedTarget) {
+                // go for next target in the next loop
+                ++currentTargetIndex;
+                // clear phi so that for each target we start at phi = 0
+                mb_state.phi = 0;
+                startTargetTime = now();
+                if (currentTargetIndex < numTarget) {
+                    // figure out how far we actually need to go
+                    const Target* nextTarget = &targets[currentTargetIndex];
+                    const double dx = nextTarget->x - mb_odometry.x;
+                    const double dy = nextTarget->y - mb_odometry.y;
+                    // distance to radians the wheel has to travel
+                    initialDeltaPhi = sqrt(dx*dx + dy*dy) * 2 / WHEEL_DIAMETER;
+                    initialHeading = mb_state.heading;
+                }
+            } else {
+                const double percentAlongPath = mb_in_range((now() - startTargetTime)/currentTarget->duration, 0, 1);
+                // set setpoint such that we get closer to target
+                if (currentTarget->type == TRANSLATE) {
+
+                    setpoint.phi = percentAlongPath * initialDeltaPhi;
+                    // heading needs to face towards target
+                    const double headingToTarget = atan2(dy, dx);
+                    setpoint.heading = headingToTarget;
+                } else {
+                    // don't move anywhere
+                    setpoint.phi = 0;
+                    // blend the initial heading and the desired heading
+                    setpoint.heading = percentAlongPath * currentTarget->heading + (1-percentAlongPath) * initialHeading;
+                }
+            }
         }
         rc_nanosleep(1E9 / RC_CTL_HZ);
     }

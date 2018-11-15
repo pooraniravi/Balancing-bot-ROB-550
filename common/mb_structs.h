@@ -41,12 +41,22 @@ struct mb_setpoints{
     int manual_ctl;
 };
 
+// low level setpoint for the controller to stabilize to
 typedef struct {
-    // for now just a phi; consider attaching x,y,heading to here
     double phi;
     double theta;
     double heading;
 } Setpoint;
+
+enum TargetType {TRANSLATE=0, ROTATE=1};
+// high level target for the planner to create setpoints to
+typedef struct {
+    double x;
+    double y;
+    double heading;
+    TargetType type;
+    double duration;
+} Target;
 
 #define NO_SET_HEADING -999
 
