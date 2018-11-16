@@ -1,35 +1,4 @@
-starting print thread... 
-starting setpoint thread... 
-starting motion capture message receive thread... 
-initializing imu... 
-initializing controller...
--15.0000  -0.4000  -0.1000  -0.0850  
-initializing motors...
-resetting encoders...
-initializing state...
-initializing setpoint...
-initializing targets...
-15 targets found
-type: translate x 1.000000 y 0.000000 heading 0.000000 duration 5.000000
-type: rotate x 1.000000 y 0.000000 heading 1.570000 duration 3.000000
-type: translate x 1.000000 y 1.000000 heading 0.000000 duration 5.000000
-type: rotate x 1.000000 y 1.000000 heading 3.140000 duration 3.000000
-type: translate x 0.000000 y 1.000000 heading 0.000000 duration 5.000000
-type: rotate x 0.000000 y 1.000000 heading 4.710000 duration 3.000000
-type: translate x 0.000000 y 0.000000 heading 0.000000 duration 5.000000
-type: rotate x 0.000000 y 0.000000 heading 0.000000 duration 3.000000
-type: translate x 1.000000 y 0.000000 heading 0.000000 duration 5.000000
-type: rotate x 1.000000 y 0.000000 heading 1.570000 duration 3.000000
-type: translate x 1.000000 y 1.000000 heading 0.000000 duration 5.000000
-type: rotate x 1.000000 y 1.000000 heading 3.140000 duration 3.000000
-type: translate x 0.000000 y 1.000000 heading 0.000000 duration 5.000000
-type: rotate x 0.000000 y 1.000000 heading 4.710000 duration 3.000000
-type: translate x 0.000000 y 0.000000 heading 0.000000 duration 5.000000
-initializing odometry...
-attaching imu interupt...
-we are running!!!...
-
-1539104349.958,  -0.000,   0.000,   0.000, +0.000000, +0.000000, +0.000000 
+1539104349.958,  -0.000,   0.000,   0.000, +0.000000, +0.000000, +0.000000 
 1539104350.068,  -0.009,   0.000,  -0.001, -1.366320, -0.600219, -1.610202 
 1539104350.168,  -0.013,  -0.000,   0.003, -1.366941, -0.600136, -1.612381 
 1539104350.268,  -0.013,  -0.000,   0.010, -1.367034, -0.600095, -1.608258 
@@ -382,4 +351,3 @@ we are running!!!...
 1539104385.315,   0.998,  -0.003,  -0.003, -0.580445, -0.807848, -2.047245 
 1539104385.415,   0.998,  -0.003,  -0.002, -0.581229, -0.807540, -2.045171 
 1539104385.525,   0.989,  -0.004,   0.080, -0.584970, -0.805563, -2.032567 
-1539104385.625,   
