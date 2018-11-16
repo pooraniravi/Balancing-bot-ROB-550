@@ -435,9 +435,9 @@ void startTarget() {
     const double dx = nextTarget->x - mb_odometry.x;
     const double dy = nextTarget->y - mb_odometry.y;
     // distance to radians the wheel has to travel
-    initialDeltaPhi = sqrt(dx * dx + dy * dy) * 2.0 / WHEEL_DIAMETER;
     initialHeading = mb_state.heading;
-    initialPhi = mb_state.phi;
+    initialPhi = setpoint.phi;
+    initialDeltaPhi = (setpoint.phi - mb_state.phi) + sqrt(dx * dx + dy * dy) * 2.0 / WHEEL_DIAMETER;
 }
 
 void *setpoint_control_loop(void *ptr) {
