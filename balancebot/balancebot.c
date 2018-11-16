@@ -32,9 +32,8 @@
 #include "../optitrack/common/serial.h"
 
 // threshold on the difference between gyro and odometry incremental heading
-// TODO determine heading threshold for gyrodometry by recording difference in
 // dHeading from odometry and gyro
-const double GYRODOMETRY_THRESHOLD_RAD = 0.1;
+const double GYRODOMETRY_THRESHOLD_RAD = 0.005;
 Setpoint setpoint;
 rc_filter_t thetaDotFilter = RC_FILTER_INITIALIZER;
 const int baudRate = 57600;
@@ -373,7 +372,7 @@ void balancebot_controller() {
     // Update odometry
     mb_odometry_update(&mb_odometry, &mb_state, dt);
     const double dOdometryHeading = mb_odometry.dHeading;
-    const double dGyroHeading = mb_state.gyroHeading - heading;
+    const double dGyroHeading = heading - mb_state.gyroHeading;
     mb_state.gyroHeading = heading;
 
     // gyrodometry
