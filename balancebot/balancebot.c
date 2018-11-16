@@ -284,16 +284,22 @@ int main() {
     setpoint.heading = 0;
 
     printf("initializing targets...\n");
-    FILE *file = fopen(PID_PATH, "r");
+    FILE *file = fopen(TARGET_PATH, "r");
     if (file != NULL) {
         int n = 0;
         fscanf(file, "%d", &n);
+        printf("%d targets found\n", n);
         Target t;
         int type;
         for (int i = 0; i < n; ++i) {
             fscanf(file, "%d %lf %lf %lf %lf", &type, &t.x, &t.y, &t.heading, &t.duration);
-            t.type = (enum TargetType)type;
+            t.type = (enum TargetType) type;
             addTarget(t);
+        }
+        for (int i = 0; i < n; ++i) {
+            const Target *tt = &targets[i];
+            printf("type: %s x %lf y %lf heading %lf duration %lf\n", (tt->type == TRANSLATE) ? "translate" : "rotate",
+                   tt->x, tt->y, tt->heading, tt->duration);
         }
     }
 
@@ -407,7 +413,7 @@ double lastCommandTime = 0;
 const double minTimeBetweenCommands = 0.0;
 const double DSM_DEAD_ZONE = 0.01;
 
-const double PHI_TOLERANCE = 0.2;
+const double PHI_TOLERANCE = 0.6;
 const double HEADING_TOLERANCE = 0.05;
 
 const double HEADING_P = 0.5;
@@ -418,6 +424,22 @@ const double PHI_MAX = 0.2;
 double startTargetTime = 0;
 double initialDeltaPhi = 0;
 double initialHeading = 0;
+double initialPhi = 0;
+
+void startTarget() {
+    // clear phi so that for each target we start at phi = 0
+//    mb_state.phi = 0;
+//    reset_phi_controller();
+    startTargetTime = now();
+    // figure out how far we actually need to go
+    const Target *nextTarget = &targets[currentTargetIndex];
+    const double dx = nextTarget->x - mb_odometry.x;
+    const double dy = nextTarget->y - mb_odometry.y;
+    // distance to radians the wheel has to travel
+    initialDeltaPhi = sqrt(dx * dx + dy * dy) * 2.0 / WHEEL_DIAMETER;
+    initialHeading = mb_state.heading;
+    initialPhi = mb_state.phi;
+}
 
 void *setpoint_control_loop(void *ptr) {
 
@@ -446,64 +468,57 @@ void *setpoint_control_loop(void *ptr) {
                 const double commandTime = now();
                 if (commandTime - lastCommandTime > minTimeBetweenCommands) {
                     //setpoint.phi = vel * maxPhiControlStep;
-                    setpoint.phi+= vel * maxPhiControlStep;
+                    setpoint.phi += vel * maxPhiControlStep;
                     lastCommandTime = commandTime;
                 }
             }
             if (fabs(heading) > DSM_DEAD_ZONE) {
-                setpoint.heading =  mb_state.heading + heading * MAX_HEADING_VEL;
+                setpoint.heading = mb_state.heading + heading * MAX_HEADING_VEL;
             }
             setpoint.heading = mb_state.heading + heading * MAX_HEADING_VEL;
         } else if (currentTargetIndex < numTarget) {
             // initialization
             if (startTargetTime == 0) {
-                startTargetTime = now();
+                startTarget();
             }
 
             // else check if our planner has any setpoints
-            const Target* currentTarget = &targets[currentTargetIndex];
+            const Target *currentTarget = &targets[currentTargetIndex];
             int reachedTarget = 0;
             // only matters for translation targets
             const double dx = currentTarget->x - mb_odometry.x;
             const double dy = currentTarget->y - mb_odometry.y;
             // distance to radians the wheel has to travel
-            const double dphi = sqrt(dx*dx + dy*dy) * 2 / WHEEL_DIAMETER;
+            const double dphi = sqrt(dx * dx + dy * dy) * 2.0 / WHEEL_DIAMETER;
             // only matters for rotation targets
-            const double dheading = currentTarget->heading - mb_state.heading;
+            const double dheading = mb_clamp_radians(currentTarget->heading) - mb_state.heading;
             if ((currentTarget->type == TRANSLATE && fabs(dphi) < PHI_TOLERANCE) ||
-                    (currentTarget->type == ROTATE && fabs(dheading) < HEADING_TOLERANCE)) {
+                (currentTarget->type == ROTATE && fabs(dheading) < HEADING_TOLERANCE)) {
                 reachedTarget = 1;
             }
             // check if we've reached our target
             if (reachedTarget) {
-                // go for next target in the next loop
                 ++currentTargetIndex;
-                // clear phi so that for each target we start at phi = 0
-                mb_state.phi = 0;
-                startTargetTime = now();
                 if (currentTargetIndex < numTarget) {
-                    // figure out how far we actually need to go
-                    const Target* nextTarget = &targets[currentTargetIndex];
-                    const double dx = nextTarget->x - mb_odometry.x;
-                    const double dy = nextTarget->y - mb_odometry.y;
-                    // distance to radians the wheel has to travel
-                    initialDeltaPhi = sqrt(dx*dx + dy*dy) * 2 / WHEEL_DIAMETER;
-                    initialHeading = mb_state.heading;
+                    startTarget();
                 }
             } else {
-                const double percentAlongPath = clamp((now() - startTargetTime)/currentTarget->duration, 0, 1);
+                const double percentAlongPath = clamp((now() - startTargetTime) / currentTarget->duration, 0, 1);
                 // set setpoint such that we get closer to target
                 if (currentTarget->type == TRANSLATE) {
 
-                    setpoint.phi = percentAlongPath * initialDeltaPhi;
-                    // heading needs to face towards target
-                    const double headingToTarget = atan2(dy, dx);
-                    setpoint.heading = headingToTarget;
+                    setpoint.phi = initialPhi + percentAlongPath * initialDeltaPhi;
+                    // only change heading if we're far away, as otherwise small changes will be noisy
+                    if (dphi > 5) {
+                        // heading needs to face towards target
+                        const double headingToTarget = atan2(dy, dx);
+                        setpoint.heading = headingToTarget;
+                    }
                 } else {
-                    // don't move anywhere
-                    setpoint.phi = 0;
+                    // don't touch the phi setpoint
                     // blend the initial heading and the desired heading
-                    setpoint.heading = percentAlongPath * currentTarget->heading + (1-percentAlongPath) * initialHeading;
+                    setpoint.heading = mb_clamp_radians(
+                            percentAlongPath * currentTarget->heading + (1 - percentAlongPath) * initialHeading);
                 }
             }
         }
@@ -526,27 +541,27 @@ void *printf_loop(void *ptr) {
         new_state = rc_get_state();
         // check if this is the first time since being paused
         if (new_state == RUNNING && last_state != RUNNING) {
-            printf("\nRUNNING: Hold upright to balance.\n");
-            printf("                 SENSORS               |           "
-                   "ODOMETRY          |");
-            printf("\n");
-            printf("    θ    |");
-            printf("    φ    |");
-            printf(" heading  |");
+//            printf("\nRUNNING: Hold upright to balance.\n");
+//            printf("                 SENSORS               |           "
+//                   "ODOMETRY          |");
+//            printf("\n");
+//            printf("    θ    |");
+//            printf("    φ    |");
+//            printf(" heading  |");
 //            printf("  L Enc  |");
 //            printf("  R Enc  |");
 //            printf("    X    |");
 //            printf("    Y    |");
 //            printf("    ψ    |");
-            printf("   θdot  |");
-            printf("   φdot  |");
-            printf("    φr   |");
-            printf("    θr   |");
-            printf(" headingr |");
-            printf("    vl   |");
-            printf("    vr   |");
-            printf("    L    |");
-            printf("    R    |");
+//            printf("   θdot  |");
+//            printf("   φdot  |");
+//            printf("    φr   |");
+//            printf("    θr   |");
+//            printf(" headingr |");
+//            printf("    vl   |");
+//            printf("    vr   |");
+//            printf("    L    |");
+//            printf("    R    |");
 
             printf("\n");
         } else if (new_state == PAUSED && last_state != PAUSED) {
@@ -558,22 +573,24 @@ void *printf_loop(void *ptr) {
             printf("\r");
             // Add Print stattements here, do not follow with /n
             pthread_mutex_lock(&state_mutex);
-            printf("%7.3f  |", mb_state.theta);
-            printf("%7.3f  |", mb_state.phi);
+            printf("%d  |", currentTargetIndex);
+            printf("%d  |", numTarget);
 //            printf("%7d  |", mb_state.left_encoder);
 //            printf("%7d  |", mb_state.right_encoder);
-//            printf("%7.3f  |", mb_odometry.x);
-//            printf("%7.3f  |", mb_odometry.y);
+//            printf("%7.3f  |", mb_state.theta);
+            printf("%7.3f  |", mb_odometry.x);
+            printf("%7.3f  |", mb_odometry.y);
+            printf("%7.3f  |", mb_state.phi);
             printf("%7.3f  |", mb_state.heading);
-            printf("%7.3f  |", mb_state.thetaDot);
-            printf("%7.3f  |", mb_state.phiDot);
+//            printf("%7.3f  |", mb_state.thetaDot);
+//            printf("%7.3f  |", mb_state.phiDot);
             printf("%7.3f  |", setpoint.phi);
-            printf("%7.3f  |", setpoint.theta);
+//            printf("%7.3f  |", setpoint.theta);
             printf("%7.3f  |", setpoint.heading);
-            printf("%7.3f  |", mb_state.vL);
-            printf("%7.3f  |", mb_state.vR);
-            printf("%7.3f  |", mb_state.left_cmd);
-            printf("%7.3f  |", mb_state.right_cmd);
+//            printf("%7.3f  |", mb_state.vL);
+//            printf("%7.3f  |", mb_state.vR);
+//            printf("%7.3f  |", mb_state.left_cmd);
+//            printf("%7.3f  |", mb_state.right_cmd);
 //            printf("%7d  |", dataCount);
             //printData(BBmsg);
 //            printf("%+7.6f|", BBmsg.pose.x);
@@ -584,7 +601,7 @@ void *printf_loop(void *ptr) {
 //                printf("%+7.6f|", (BBmsg.gates[0].left_post[0] + BBmsg.gates[0].right_post[0]) / 2.0);
 //                printf("%+7.6f|", (BBmsg.gates[0].left_post[1] + BBmsg.gates[0].right_post[1]) / 2.0);
 //            }
-            printf("\r");
+            printf("\n");
             pthread_mutex_unlock(&state_mutex);
             fflush(stdout);
         }

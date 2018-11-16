@@ -55,7 +55,7 @@ int mb_controller_init() {
  * return 0 on success
  *
  *******************************************************************************/
-
+double maxTheta;
 int mb_controller_load_config() {
     FILE *file = fopen(PID_PATH, "r");
     if (file == NULL) {
@@ -65,7 +65,7 @@ int mb_controller_load_config() {
 
     // max theta velocity in rad/s (max spin to allow for turning)
     double kpTheta, kiTheta, kdTheta;
-    double kpPhi, kiPhi, kdPhi, maxTheta, riseTime;
+    double kpPhi, kiPhi, kdPhi, riseTime;
 
     fscanf(file, "%lf %lf %lf %lf", &kpTheta, &kiTheta, &kdTheta, &riseTime);
 
@@ -169,6 +169,11 @@ int mb_controller_update(mb_state_t *mb_state, Setpoint *sp) {
     mb_state->right_cmd = punch(sharedVelocity + diffVelocity);
 
     return 0;
+}
+
+void reset_phi_controller() {
+    rc_filter_reset(&phiController);
+    rc_filter_enable_saturation(&phiController, -maxTheta, maxTheta);
 }
 
 /*******************************************************************************
