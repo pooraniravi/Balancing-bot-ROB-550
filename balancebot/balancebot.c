@@ -161,7 +161,7 @@ void *motion_capture_receive_message_loop(void *ptr) {
 }
 
 // planner variables
-Target targets[10];
+Target targets[20];
 int numTarget = 0;
 int currentTargetIndex = 0;
 
@@ -231,9 +231,9 @@ int main() {
 
     // TODO: start motion capture message recieve thread
     printf("starting motion capture message receive thread... \n");
-//    pthread_t motion_capture_receive_message_thread;
-//    rc_pthread_create(&motion_capture_receive_message_thread, motion_capture_receive_message_loop,
-//                      (void *) NULL, SCHED_FIFO, 50);
+    pthread_t motion_capture_receive_message_thread;
+    rc_pthread_create(&motion_capture_receive_message_thread, motion_capture_receive_message_loop,
+                      (void *) NULL, SCHED_FIFO, 50);
 
     // set up IMU configuration
     printf("initializing imu... \n");
@@ -572,29 +572,30 @@ void *printf_loop(void *ptr) {
             printf("\r");
             // Add Print stattements here, do not follow with /n
             pthread_mutex_lock(&state_mutex);
-            printf("%d  |", currentTargetIndex);
-            printf("%d  |", numTarget);
+//            printf("%d  |", currentTargetIndex);
+//            printf("%d  |", numTarget);
 //            printf("%7d  |", mb_state.left_encoder);
 //            printf("%7d  |", mb_state.right_encoder);
 //            printf("%7.3f  |", mb_state.theta);
-            printf("%7.3f  |", mb_odometry.x);
-            printf("%7.3f  |", mb_odometry.y);
-            printf("%7.3f  |", mb_state.phi);
-            printf("%7.3f  |", mb_state.heading);
+            printf("%7.3f, ", mb_state.t);
+            printf("%7.3f, ", mb_odometry.x);
+            printf("%7.3f, ", mb_odometry.y);
+//            printf("%7.3f, ", mb_state.phi);
+            printf("%7.3f, ", mb_state.heading);
 //            printf("%7.3f  |", mb_state.thetaDot);
 //            printf("%7.3f  |", mb_state.phiDot);
-            printf("%7.3f  |", setpoint.phi);
+//            printf("%7.3f  |", setpoint.phi);
 //            printf("%7.3f  |", setpoint.theta);
-            printf("%7.3f  |", setpoint.heading);
+//            printf("%7.3f  |", setpoint.heading);
 //            printf("%7.3f  |", mb_state.vL);
 //            printf("%7.3f  |", mb_state.vR);
 //            printf("%7.3f  |", mb_state.left_cmd);
 //            printf("%7.3f  |", mb_state.right_cmd);
 //            printf("%7d  |", dataCount);
             //printData(BBmsg);
-//            printf("%+7.6f|", BBmsg.pose.x);
-//            printf("%+7.6f|", BBmsg.pose.y);
-//            printf("%+7.6f|", BBmsg.pose.theta);
+            printf("%+7.6f, ", BBmsg.pose.x);
+            printf("%+7.6f, ", BBmsg.pose.y);
+            printf("%+7.6f ", BBmsg.pose.theta);
 //            printf("  %d   |", BBmsg.num_gates);
 //            if (BBmsg.num_gates > 0) {
 //                printf("%+7.6f|", (BBmsg.gates[0].left_post[0] + BBmsg.gates[0].right_post[0]) / 2.0);
